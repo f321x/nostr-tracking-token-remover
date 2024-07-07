@@ -1,5 +1,5 @@
 [package]
-name = "nostr-tracking-link-remover"
+name = "nostr-tracking-token-remover"
 version = "0.1.0"
 edition = "2021"
 
