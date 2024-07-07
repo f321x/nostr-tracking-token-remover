@@ -14,7 +14,7 @@ impl Parser {
 	}
 
 	fn parse_youtube_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
-		dbg!("Parsing url: {}", parsed_url.host_str().unwrap());
+		// dbg!("Parsing url: {}", parsed_url.host_str().unwrap());
 		let mut url = match parsed_url.host_str() {
 			Some("www.youtube.com") | Some("youtube.com") | Some("youtu.be") | Some("yt.be") => {
 				parsed_url.clone()
