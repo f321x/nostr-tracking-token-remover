@@ -1,0 +1,19 @@
+[package]
+name = "nostr-tracking-link-remover"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.86"
+dotenv = "0.15.0"
+linkify = "0.10.0"
+nostr-sdk = "0.32.0"
+tokio = "1.38.0"
+url = "2.5.2"
+
+[profile.release]
+lto = true
+opt-level = 3
+strip = true
