@@ -133,6 +133,7 @@ impl Parser {
 			return Ok(None);
 		}
 
+		let mut cleaned_links: Vec<String> = Vec::new();
 		for link in links {
 			let url = match Url::parse(link.as_str()) {
 				Ok(url) => url,
@@ -140,14 +141,17 @@ impl Parser {
 			};
 
 			if let Ok(Some(youtube_link)) = self.parse_youtube_url(&url) {
-				return Ok(Some(youtube_link));
+				cleaned_links.push(youtube_link);
 			}
 			if let Ok(Some(twitter_link)) = self.parse_twitter_url(&url) {
-				return Ok(Some(twitter_link));
+				cleaned_links.push(twitter_link);
 			}
 		}
-
-		Ok(None)
+		if !cleaned_links.is_empty() {
+			Ok(Some(cleaned_links.join("\n")))
+		} else {
+			Ok(None)
+		}
 	}
 }
 
