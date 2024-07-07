@@ -14,9 +14,11 @@ impl Parser {
 	}
 
 	fn parse_youtube_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
-		println!("{}", parsed_url.host_str().unwrap());
+		dbg!("Parsing url: {}", parsed_url.host_str().unwrap());
 		let mut url = match parsed_url.host_str() {
-			Some("www.youtube.com") | Some("youtube.com") => parsed_url.clone(),
+			Some("www.youtube.com") | Some("youtube.com") | Some("youtu.be") | Some("yt.be") => {
+				parsed_url.clone()
+			}
 			_ => return Ok(None),
 		};
 
@@ -31,6 +33,7 @@ impl Parser {
 			"gclid",
 			"fbclid",
 			"si",
+			"pp",
 		];
 
 		// Get the query pairs and filter out tracking parameters

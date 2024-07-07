@@ -35,7 +35,7 @@ impl Bot {
 		client.add_relay("wss://relay.nostrplebs.com").await?;
 		client.connect().await;
 
-		let note_filter = Filter::new().kind(Kind::TextNote);
+		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
 		Ok(Bot {
 			client,
 			keys,
@@ -51,9 +51,10 @@ impl Bot {
 		while let Ok(notification) = notifications.recv().await {
 			if let RelayPoolNotification::Event { event, .. } = notification {
 				if let Some(link_without_tracker) =
-					self.parser.parse_event_content(&event.content())?
+					self.parser.parse_event_content(event.content())?
 				{
-					let _ = self.reply(&link_without_tracker, &event);
+					println!("Detected tracking token: {}", &link_without_tracker);
+					let _ = self.reply(&link_without_tracker, &event).await;
 				}
 			}
 		}
