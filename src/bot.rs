@@ -1,14 +1,14 @@
 use crate::parsing::Parser;
 use anyhow::Context;
 use nostr_sdk::prelude::*;
-use std::cell::RefCell;
+use std::sync::{Arc, RwLock};
 
 pub struct Bot {
 	client: Client,
 	keys: Keys,
 	filters: Vec<Filter>,
 	parser: Parser,
-	filter_counter: RefCell<u64>,
+	filter_counter: RwLock<u64>,
 	announcement_tag_npub: PublicKey,
 }
 
@@ -23,7 +23,7 @@ impl Bot {
 	pub async fn new(
 		nostr_private_key: &String,
 		announcement_tag_npub: &String,
-	) -> anyhow::Result<Self> {
+	) -> anyhow::Result<Arc<Self>> {
 		let keys = Keys::parse(nostr_private_key)?;
 		println!("The bot public key is: {}", keys.public_key().to_bech32()?);
 
@@ -50,23 +50,26 @@ impl Bot {
 		client.connect().await;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
-		Ok(Bot {
+		Ok(Arc::new(Bot {
 			client,
 			keys,
 			filters: vec![note_filter],
 			parser: Parser::new()?,
-			filter_counter: RefCell::new(0),
+			filter_counter: RwLock::new(0),
 			announcement_tag_npub,
-		})
+		}))
 	}
 
-	pub async fn run(&self) -> anyhow::Result<()> {
-		self.filter_counter_announcement_loop().await?;
+	pub async fn run(self: Arc<Self>) -> anyhow::Result<()> {
+		let self_clone = self.clone();
+		tokio::spawn(async move { self_clone.filter_counter_announcement_loop().await });
+
 		let _subscription_id = self.client.subscribe(self.filters.clone(), None).await;
 		let mut notifications = self.client.notifications();
 
 		while let Ok(notification) = notifications.recv().await {
 			if let RelayPoolNotification::Event { event, .. } = notification {
+				println!("parsing event");
 				if let Some(link_without_tracker) =
 					self.parser.parse_event_content(event.content())?
 				{
@@ -81,7 +84,6 @@ impl Bot {
 	}
 
 	async fn reply(&self, cleaned_url: &str, event_to_reply: &Event) -> anyhow::Result<()> {
-		*self.filter_counter.borrow_mut() += 1;
 		let reply_text = format_reply_text(cleaned_url);
 		let reply_event =
 			match EventBuilder::text_note_reply(reply_text, event_to_reply, None, None)
@@ -95,14 +97,16 @@ impl Bot {
 		if let Err(e) = self.client.send_event(reply_event).await {
 			return Err(anyhow::anyhow!("Error sending reply event: {}", e));
 		}
+		*self.filter_counter.write().unwrap() += 1;
 		Ok(())
 	}
 
 	async fn filter_counter_announcement_loop(&self) -> anyhow::Result<()> {
 		loop {
+			println!("Next announcement in 24 hours");
 			tokio::time::sleep(std::time::Duration::from_secs(86400)).await;
-			let counter = *self.filter_counter.borrow();
-			*self.filter_counter.borrow_mut() = 0;
+			let counter = *self.filter_counter.read().unwrap();
+			*self.filter_counter.write().unwrap() = 0;
 
 			let announcement_message = format!(
 				"This bot has replied to {} events with tracking tokens in the last 24 hours.\nZap this bot to incentivize developement.\nFind the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover",
