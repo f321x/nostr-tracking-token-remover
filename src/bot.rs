@@ -1,7 +1,7 @@
 use crate::parsing::Parser;
 use anyhow::Context;
 use nostr_sdk::prelude::*;
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 
 pub struct Bot {
 	client: Client,
