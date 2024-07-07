@@ -33,6 +33,9 @@ impl Bot {
 			.await?;
 		client.add_relay("wss://nostr.mom").await?;
 		client.add_relay("wss://relay.nostrplebs.com").await?;
+		client.add_relay("wss://relay.mostr.pub").await?;
+		client.add_relay("wss://nos.lol").await?;
+		client.add_relay("wss://nostr.einundzwanzig.space").await?;
 		client.connect().await;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
