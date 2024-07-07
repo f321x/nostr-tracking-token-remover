@@ -69,7 +69,6 @@ impl Bot {
 
 		while let Ok(notification) = notifications.recv().await {
 			if let RelayPoolNotification::Event { event, .. } = notification {
-				println!("parsing event");
 				if let Some(link_without_tracker) =
 					self.parser.parse_event_content(event.content())?
 				{
