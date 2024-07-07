@@ -57,14 +57,16 @@ impl Bot {
 					self.parser.parse_event_content(event.content())?
 				{
 					println!("Detected tracking token: {}", &link_without_tracker);
-					let _ = self.reply(&link_without_tracker, &event).await;
+					if let Err(e) = self.reply(&link_without_tracker, &event).await {
+						println!("Error replying to event: {}", e);
+					}
 				}
 			}
 		}
-		Ok(())
+		Err(anyhow::anyhow!("Bot stopped running"))
 	}
 
-	async fn reply(&self, cleaned_url: &str, event_to_reply: &Event) -> Result<()> {
+	async fn reply(&self, cleaned_url: &str, event_to_reply: &Event) -> anyhow::Result<()> {
 		let reply_text = format_reply_text(cleaned_url);
 		let reply_event =
 			match EventBuilder::text_note_reply(reply_text, event_to_reply, None, None)
@@ -72,12 +74,11 @@ impl Bot {
 			{
 				Ok(event) => event,
 				Err(e) => {
-					println!("Error creating reply event: {}", e);
-					return Ok(());
+					return Err(anyhow::anyhow!("Error creating reply event: {}", e));
 				}
 			};
 		if let Err(e) = self.client.send_event(reply_event).await {
-			println!("Error publishing reply event: {}", e);
+			return Err(anyhow::anyhow!("Error sending reply event: {}", e));
 		}
 		Ok(())
 	}
