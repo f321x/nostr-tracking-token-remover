@@ -13,6 +13,64 @@ impl Parser {
 		Ok(Self { finder })
 	}
 
+	fn parse_twitter_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
+		let mut url = match parsed_url.host_str() {
+			Some("www.twitter.com")
+			| Some("twitter.com")
+			| Some("t.co")
+			| Some("x.com")
+			| Some("www.x.com") => parsed_url.clone(),
+			_ => return Ok(None),
+		};
+
+		// List of tracking parameters to remove
+		let tracking_params = [
+			"utm_source",
+			"utm_medium",
+			"utm_campaign",
+			"utm_term",
+			"utm_content",
+			"s",
+			"t",
+			"src",
+			"ref_src",
+			"ref_url",
+			"twclid",
+		];
+
+		// Get the query pairs and filter out tracking parameters
+		let original_pairs: Vec<(String, String)> = url
+			.query_pairs()
+			.map(|(k, v)| (k.into_owned(), v.into_owned()))
+			.collect();
+
+		let filtered_pairs: Vec<(String, String)> = url
+			.query_pairs()
+			.filter(|(key, _)| !tracking_params.contains(&key.as_ref()))
+			.map(|(k, v)| (k.into_owned(), v.into_owned()))
+			.collect();
+
+		// If no tracking tokens were removed, return None
+		if original_pairs.len() == filtered_pairs.len() {
+			return Ok(None);
+		}
+
+		// Clear the existing query string
+		url.set_query(None);
+
+		// Add back the filtered parameters
+		if !filtered_pairs.is_empty() {
+			let query_string = filtered_pairs
+				.into_iter()
+				.map(|(k, v)| format!("{}={}", k, v))
+				.collect::<Vec<String>>()
+				.join("&");
+			url.set_query(Some(&query_string));
+		}
+
+		Ok(Some(url.to_string()))
+	}
+
 	fn parse_youtube_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
 		// dbg!("Parsing url: {}", parsed_url.host_str().unwrap());
 		let mut url = match parsed_url.host_str() {
@@ -84,12 +142,16 @@ impl Parser {
 			if let Ok(Some(youtube_link)) = self.parse_youtube_url(&url) {
 				return Ok(Some(youtube_link));
 			}
+			if let Ok(Some(twitter_link)) = self.parse_twitter_url(&url) {
+				return Ok(Some(twitter_link));
+			}
 		}
 
 		Ok(None)
 	}
 }
 
+// some ai generated tests
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -121,5 +183,72 @@ mod tests {
 		let non_youtube_url =
 			Url::parse("https://www.example.com?param1=value1&utm_source=test").unwrap();
 		assert_eq!(parser.parse_youtube_url(&non_youtube_url).unwrap(), None);
+	}
+
+	#[test]
+	fn test_twitter_url_with_tracking_params() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://twitter.com/user/status/123?utm_source=test&s=1").unwrap();
+		let result = parser.parse_twitter_url(&url).unwrap();
+		assert_eq!(
+			result,
+			Some("https://twitter.com/user/status/123".to_string())
+		);
+	}
+
+	#[test]
+	fn test_twitter_url_without_tracking_params() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://twitter.com/user/status/123").unwrap();
+		let result = parser.parse_twitter_url(&url).unwrap();
+		assert_eq!(result, None);
+	}
+
+	#[test]
+	fn test_x_com_url_with_tracking_params() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://x.com/user/status/123?utm_source=test&twclid=123").unwrap();
+		let result = parser.parse_twitter_url(&url).unwrap();
+		assert_eq!(result, Some("https://x.com/user/status/123".to_string()));
+	}
+
+	#[test]
+	fn test_t_co_url_with_tracking_params() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://t.co/abcdef?utm_campaign=test").unwrap();
+		let result = parser.parse_twitter_url(&url).unwrap();
+		assert_eq!(result, Some("https://t.co/abcdef".to_string()));
+	}
+
+	#[test]
+	fn test_non_twitter_url() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://example.com/page?utm_source=test").unwrap();
+		let result = parser.parse_twitter_url(&url).unwrap();
+		assert_eq!(result, None);
+	}
+
+	#[test]
+	fn test_twitter_url_with_mixed_params() {
+		let parser = Parser::new().unwrap();
+		let url =
+			Url::parse("https://twitter.com/user/status/123?utm_source=test&valid_param=true")
+				.unwrap();
+		let result = parser.parse_twitter_url(&url).unwrap();
+		assert_eq!(
+			result,
+			Some("https://twitter.com/user/status/123?valid_param=true".to_string())
+		);
+	}
+
+	#[test]
+	fn test_www_x_com_url() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://www.x.com/user/status/123?s=1&t=2").unwrap();
+		let result = parser.parse_twitter_url(&url).unwrap();
+		assert_eq!(
+			result,
+			Some("https://www.x.com/user/status/123".to_string())
+		);
 	}
 }
