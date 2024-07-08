@@ -1,6 +1,6 @@
 use crate::parsing::Parser;
 use anyhow::Context;
-use log::{error, info};
+use log::{debug, error, info};
 use nostr_sdk::prelude::*;
 use std::sync::{Arc, RwLock};
 
@@ -75,7 +75,7 @@ impl Bot {
 				if let Some(link_without_tracker) =
 					self.parser.parse_event_content(event.content())?
 				{
-					info!("Detected tracking token: {}", &link_without_tracker);
+					debug!("Detected tracking token: {}", &link_without_tracker);
 					if let Err(e) = self.reply(&link_without_tracker, &event).await {
 						error!("Error replying to event: {}", e);
 					}
