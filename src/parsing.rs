@@ -1,5 +1,6 @@
 use super::*;
 use linkify::{LinkFinder, LinkKind};
+use std::collections::HashSet;
 use url::Url;
 
 pub struct Parser {
@@ -11,121 +12,6 @@ impl Parser {
 		let mut finder = LinkFinder::new();
 		finder.kinds(&[LinkKind::Url]);
 		Ok(Self { finder })
-	}
-
-	fn parse_twitter_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
-		let mut url = match parsed_url.host_str() {
-			Some("www.twitter.com")
-			| Some("twitter.com")
-			| Some("t.co")
-			| Some("x.com")
-			| Some("www.x.com") => parsed_url.clone(),
-			_ => return Ok(None),
-		};
-
-		// List of tracking parameters to remove
-		let tracking_params = [
-			"utm_source",
-			"utm_medium",
-			"utm_campaign",
-			"utm_term",
-			"utm_content",
-			"s",
-			"t",
-			"src",
-			"ref_src",
-			"ref_url",
-			"twclid",
-		];
-
-		// Get the query pairs and filter out tracking parameters
-		let original_pairs: Vec<(String, String)> = url
-			.query_pairs()
-			.map(|(k, v)| (k.into_owned(), v.into_owned()))
-			.collect();
-
-		let filtered_pairs: Vec<(String, String)> = url
-			.query_pairs()
-			.filter(|(key, _)| !tracking_params.contains(&key.as_ref()))
-			.map(|(k, v)| (k.into_owned(), v.into_owned()))
-			.collect();
-
-		// If no tracking tokens were removed, return None
-		if original_pairs.len() == filtered_pairs.len() {
-			return Ok(None);
-		}
-
-		// Clear the existing query string
-		url.set_query(None);
-
-		// Add back the filtered parameters
-		if !filtered_pairs.is_empty() {
-			let query_string = filtered_pairs
-				.into_iter()
-				.map(|(k, v)| format!("{}={}", k, v))
-				.collect::<Vec<String>>()
-				.join("&");
-			url.set_query(Some(&query_string));
-		}
-
-		Ok(Some(url.to_string()))
-	}
-
-	fn parse_youtube_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
-		// dbg!("Parsing url: {}", parsed_url.host_str().unwrap());
-		let mut url = match parsed_url.host_str() {
-			Some("www.youtube.com") | Some("youtube.com") | Some("youtu.be") | Some("yt.be") => {
-				parsed_url.clone()
-			}
-			_ => return Ok(None),
-		};
-
-		// List of tracking parameters to remove
-		let tracking_params = [
-			"utm_source",
-			"utm_medium",
-			"utm_campaign",
-			"utm_term",
-			"utm_content",
-			"feature",
-			"gclid",
-			"fbclid",
-			"si",
-			"pp",
-			"t",
-		];
-
-		// Get the query pairs and filter out tracking parameters
-		let original_pairs: Vec<(String, String)> = url
-			.query_pairs()
-			.map(|(k, v)| (k.into_owned(), v.into_owned()))
-			.collect();
-
-		// Get the query pairs and filter out tracking parameters
-		let filtered_pairs: Vec<(String, String)> = url
-			.query_pairs()
-			.filter(|(key, _)| !tracking_params.contains(&key.as_ref()))
-			.map(|(k, v)| (k.into_owned(), v.into_owned()))
-			.collect();
-
-		// If no tracking tokens were removed, return None
-		if original_pairs.len() == filtered_pairs.len() {
-			return Ok(None);
-		}
-		// Clear the existing query string
-		url.set_query(None);
-
-		// Add back the filtered parameters
-		if !filtered_pairs.is_empty() {
-			let query_string = filtered_pairs
-				.into_iter()
-				.map(|(k, v)| format!("{}={}", k, v))
-				.collect::<Vec<String>>()
-				.join("&");
-			url.set_query(Some(&query_string));
-		}
-
-		Ok(Some(url.to_string()))
 	}
 
 	pub fn parse_event_content(&self, event_content: &str) -> anyhow::Result<Option<String>> {
@@ -147,12 +33,121 @@ impl Parser {
 			if let Ok(Some(twitter_link)) = self.parse_twitter_url(&url) {
 				cleaned_links.push(twitter_link);
 			}
+			if let Ok(Some(instagram_link)) = self.parse_instagram_url(&url) {
+				cleaned_links.push(instagram_link);
+			}
 		}
 		if !cleaned_links.is_empty() {
 			Ok(Some(cleaned_links.join("\n\n")))
 		} else {
 			Ok(None)
 		}
+	}
+
+	fn parse_twitter_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
+		let valid_hosts = [
+			"www.twitter.com",
+			"twitter.com",
+			"t.co",
+			"x.com",
+			"www.x.com",
+		];
+		let tracking_params = [
+			"utm_source",
+			"utm_medium",
+			"utm_campaign",
+			"utm_term",
+			"utm_content",
+			"s",
+			"t",
+			"src",
+			"ref_src",
+			"ref_url",
+			"twclid",
+		];
+		self.parse_url(parsed_url, &valid_hosts, &tracking_params)
+	}
+
+	fn parse_youtube_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
+		let valid_hosts = [
+			"www.youtube.com",
+			"youtube.com",
+			"youtu.be",
+			"yt.be",
+			"m.youtube.com",
+			"music.youtube.com",
+		];
+		let tracking_params = [
+			"utm_source",
+			"utm_medium",
+			"utm_campaign",
+			"utm_term",
+			"utm_content",
+			"feature",
+			"gclid",
+			"fbclid",
+			"si",
+			"pp",
+		];
+		self.parse_url(parsed_url, &valid_hosts, &tracking_params)
+	}
+
+	fn parse_instagram_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
+		let valid_hosts = ["www.instagram.com", "instagram.com"];
+		let tracking_params = [
+			"utm_source",
+			"utm_medium",
+			"utm_campaign",
+			"utm_term",
+			"utm_content",
+			"igshid",
+			"fbclid",
+			"_ga",
+			"_gid",
+		];
+		self.parse_url(parsed_url, &valid_hosts, &tracking_params)
+	}
+
+	fn parse_url(
+		&self,
+		parsed_url: &Url,
+		valid_hosts: &[&str],
+		tracking_params: &[&str],
+	) -> anyhow::Result<Option<String>> {
+		if !valid_hosts.contains(&parsed_url.host_str().unwrap_or("")) {
+			return Ok(None);
+		}
+
+		let mut url = parsed_url.clone();
+		let tracking_params: HashSet<_> = tracking_params.iter().cloned().collect();
+
+		let original_pairs: Vec<(String, String)> = url
+			.query_pairs()
+			.map(|(k, v)| (k.into_owned(), v.into_owned()))
+			.collect();
+
+		let filtered_pairs: Vec<(String, String)> = original_pairs
+			.iter()
+			.filter(|(key, _)| !tracking_params.contains(key.as_str()))
+			.cloned()
+			.collect();
+
+		if original_pairs.len() == filtered_pairs.len() {
+			return Ok(None);
+		}
+
+		url.set_query(None);
+
+		if !filtered_pairs.is_empty() {
+			let query_string = filtered_pairs
+				.into_iter()
+				.map(|(k, v)| format!("{}={}", k, v))
+				.collect::<Vec<String>>()
+				.join("&");
+			url.set_query(Some(&query_string));
+		}
+
+		Ok(Some(url.to_string()))
 	}
 }
 
@@ -254,6 +249,66 @@ mod tests {
 		assert_eq!(
 			result,
 			Some("https://www.x.com/user/status/123".to_string())
+		);
+	}
+
+	#[test]
+	fn test_parse_instagram_url_valid_host_with_tracking() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse(
+			"https://www.instagram.com/p/ABC123/?utm_source=ig_web_copy_link&igshid=1234567890",
+		)
+		.unwrap();
+		let result = parser.parse_instagram_url(&url).unwrap();
+		assert_eq!(
+			result,
+			Some("https://www.instagram.com/p/ABC123/".to_string())
+		);
+	}
+
+	#[test]
+	fn test_parse_instagram_url_valid_host_without_tracking() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://instagram.com/user/post/123").unwrap();
+		let result = parser.parse_instagram_url(&url).unwrap();
+		assert_eq!(result, None);
+	}
+
+	#[test]
+	fn test_parse_instagram_url_invalid_host() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://facebook.com/instagram/post/123").unwrap();
+		let result = parser.parse_instagram_url(&url).unwrap();
+		assert_eq!(result, None);
+	}
+
+	#[test]
+	fn test_parse_instagram_url_with_multiple_tracking_params() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://www.instagram.com/reel/ABC123/?utm_source=ig_web_copy_link&igshid=1234567890&utm_medium=copy_link&_ga=GA1.2.1234567890.1234567890").unwrap();
+		let result = parser.parse_instagram_url(&url).unwrap();
+		assert_eq!(
+			result,
+			Some("https://www.instagram.com/reel/ABC123/".to_string())
+		);
+	}
+
+	#[test]
+	fn test_parse_instagram_url_with_non_tracking_params() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://www.instagram.com/p/ABC123/?hl=en&user=johndoe").unwrap();
+		let result = parser.parse_instagram_url(&url).unwrap();
+		assert_eq!(result, None);
+	}
+
+	#[test]
+	fn test_parse_instagram_url_with_mixed_params() {
+		let parser = Parser::new().unwrap();
+		let url = Url::parse("https://www.instagram.com/p/ABC123/?hl=en&utm_source=ig_web&user=johndoe&igshid=1234567890").unwrap();
+		let result = parser.parse_instagram_url(&url).unwrap();
+		assert_eq!(
+			result,
+			Some("https://www.instagram.com/p/ABC123/?hl=en&user=johndoe".to_string())
 		);
 	}
 }
