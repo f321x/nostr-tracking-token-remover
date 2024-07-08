@@ -1,5 +1,6 @@
 use crate::parsing::Parser;
 use anyhow::Context;
+use log::{error, info};
 use nostr_sdk::prelude::*;
 use std::sync::{Arc, RwLock};
 
@@ -25,7 +26,7 @@ impl Bot {
 		announcement_tag_npub: &String,
 	) -> anyhow::Result<Arc<Self>> {
 		let keys = Keys::parse(nostr_private_key)?;
-		println!("The bot public key is: {}", keys.public_key().to_bech32()?);
+		info!("The bot public key is: {}", keys.public_key().to_bech32()?);
 
 		let announcement_tag_npub = PublicKey::from_bech32(announcement_tag_npub)?;
 
@@ -74,9 +75,9 @@ impl Bot {
 				if let Some(link_without_tracker) =
 					self.parser.parse_event_content(event.content())?
 				{
-					println!("Detected tracking token: {}", &link_without_tracker);
+					info!("Detected tracking token: {}", &link_without_tracker);
 					if let Err(e) = self.reply(&link_without_tracker, &event).await {
-						println!("Error replying to event: {}", e);
+						error!("Error replying to event: {}", e);
 					}
 				}
 			}
@@ -104,7 +105,7 @@ impl Bot {
 
 	async fn filter_counter_announcement_loop(&self) -> anyhow::Result<()> {
 		loop {
-			println!("Next announcement in 72 hours");
+			info!("Next announcement in 72 hours");
 			tokio::time::sleep(std::time::Duration::from_secs(259200)).await;
 			let counter = *self.filter_counter.read().unwrap();
 			*self.filter_counter.write().unwrap() = 0;
@@ -120,7 +121,7 @@ impl Bot {
 			.to_event(&self.keys)
 			.context("Error signing announcement message.")?;
 			if let Err(e) = self.client.send_event(announcement_event).await {
-				println!("Error sending announcement event: {}", e);
+				error!("Error sending announcement event: {}", e);
 			}
 		}
 	}
