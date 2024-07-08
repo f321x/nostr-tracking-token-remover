@@ -40,6 +40,7 @@ impl Bot {
 		client.add_relay("wss://nostr.mom").await?;
 		client.add_relay("wss://relay.nostrplebs.com").await?;
 		client.add_relay("wss://relay.mostr.pub").await?;
+		client.add_relay("wss://relay.momostr.pink").await?;
 		client.add_relay("wss://nos.lol").await?;
 		client.add_relay("wss://nostr.einundzwanzig.space").await?;
 		client.add_relay("wss://relay.snort.social").await?;
@@ -47,6 +48,7 @@ impl Bot {
 		client.add_relay("wss://nostr.oxtr.dev").await?;
 		client.add_relay("wss://nostr.fmt.wiz.biz").await?;
 		client.add_relay("wss://bitcoiner.social").await?;
+		client.add_relay("wss://relay.wellorder.net").await?;
 		client.connect().await;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
