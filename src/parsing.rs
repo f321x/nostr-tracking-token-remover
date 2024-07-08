@@ -92,6 +92,7 @@ impl Parser {
 			"fbclid",
 			"si",
 			"pp",
+			"t",
 		];
 
 		// Get the query pairs and filter out tracking parameters
