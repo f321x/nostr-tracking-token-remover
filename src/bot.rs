@@ -104,13 +104,13 @@ impl Bot {
 
 	async fn filter_counter_announcement_loop(&self) -> anyhow::Result<()> {
 		loop {
-			println!("Next announcement in 24 hours");
-			tokio::time::sleep(std::time::Duration::from_secs(86400)).await;
+			println!("Next announcement in 72 hours");
+			tokio::time::sleep(std::time::Duration::from_secs(259200)).await;
 			let counter = *self.filter_counter.read().unwrap();
 			*self.filter_counter.write().unwrap() = 0;
 
 			let announcement_message = format!(
-				"This bot has replied to {} events with tracking tokens in the last 24 hours.\nZap this bot to incentivize developement.\nFind the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover",
+				"This bot has replied to {} events with tracking tokens in the last 3 days.\nZap this bot to incentivize developement.\nFind the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover",
 				counter
 			);
 			let announcement_event = EventBuilder::text_note(
