@@ -148,7 +148,7 @@ impl Parser {
 			}
 		}
 		if !cleaned_links.is_empty() {
-			Ok(Some(cleaned_links.join("\n")))
+			Ok(Some(cleaned_links.join("\nand\n")))
 		} else {
 			Ok(None)
 		}
