@@ -36,6 +36,9 @@ impl Parser {
 			if let Ok(Some(instagram_link)) = self.parse_instagram_url(&url) {
 				cleaned_links.push(instagram_link);
 			}
+			if let Ok(Some(spotify_link)) = self.parse_spotify_url(&url) {
+				cleaned_links.push(spotify_link);
+			}
 		}
 		if !cleaned_links.is_empty() {
 			Ok(Some(cleaned_links.join("\n\n")))
@@ -88,6 +91,38 @@ impl Parser {
 			"fbclid",
 			"si",
 			"pp",
+		];
+		self.parse_url(parsed_url, &valid_hosts, &tracking_params)
+	}
+
+	fn parse_spotify_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
+		let valid_hosts = [
+			"open.spotify.com",
+			"play.spotify.com",
+			"spotify.com",
+			"www.spotify.com",
+			"artist.spotify.com",
+			"embed.spotify.com",
+		];
+		let tracking_params = [
+			"si", // Spotify Identifier
+			"utm_source",
+			"utm_medium",
+			"utm_campaign",
+			"utm_term",
+			"utm_content",
+			"feature",
+			"nd", // No Delay
+			"context",
+			"context_id",
+			"sp_cid",  // Spotify Campaign ID
+			"sp_ac",   // Spotify Ad Click
+			"sp_gaid", // Google Advertising ID
+			"sp_aid",  // Apple Identifier for Advertisers
+			"go",      // Generic Origin
+			"fbclid",  // Facebook Click Identifier
+			"product",
+			"referral",
 		];
 		self.parse_url(parsed_url, &valid_hosts, &tracking_params)
 	}
