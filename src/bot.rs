@@ -2,7 +2,10 @@ use crate::parsing::Parser;
 use anyhow::Context;
 use log::{debug, error, info};
 use nostr_sdk::prelude::*;
-use std::sync::{Arc, RwLock};
+use std::{
+	collections::HashSet,
+	sync::{Arc, RwLock},
+};
 
 pub struct Bot {
 	client: Client,
@@ -69,20 +72,49 @@ impl Bot {
 
 		let _subscription_id = self.client.subscribe(self.filters.clone(), None).await;
 		let mut notifications = self.client.notifications();
+		let mut replied_events: HashSet<[u8; 32]> = HashSet::new();
+		let mut reconnect_counter = 0;
 
-		while let Ok(notification) = notifications.recv().await {
-			if let RelayPoolNotification::Event { event, .. } = notification {
-				if let Some(link_without_tracker) =
-					self.parser.parse_event_content(event.content())?
-				{
-					debug!("Detected tracking token: {}", &link_without_tracker);
-					if let Err(e) = self.reply(&link_without_tracker, &event).await {
-						error!("Error replying to event: {}", e);
+		loop {
+			match notifications.recv().await {
+				Ok(notification) => {
+					if let RelayPoolNotification::Event { event, .. } = notification {
+						if replied_events.contains(&event.id().to_bytes()) {
+							continue;
+						}
+
+						if let Some(link_without_tracker) =
+							self.parser.parse_event_content(event.content())?
+						{
+							debug!("Detected tracking token: {}", &link_without_tracker);
+							if let Err(e) = self.reply(&link_without_tracker, &event).await {
+								error!("Error replying to event: {}", e);
+							}
+							replied_events.insert(event.id().to_bytes());
+							if replied_events.len() > 1500000 {
+								// 32 bytes * 1500000 = ~50 MB = forever
+								replied_events.clear();
+							}
+						}
 					}
+				}
+				Err(e) => {
+					error!("Error receiving notifications: {}", e);
+					reconnect_counter += 1;
+					self.client.unsubscribe_all().await;
+					tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+					self.client.disconnect().await?;
+					tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+					if reconnect_counter > 10 {
+						return Err(anyhow::anyhow!("Too many reconnects"));
+					}
+					self.client.connect().await;
+					let new_filter =
+						vec![Filter::new().kind(Kind::TextNote).since(Timestamp::now())];
+					let _subscription_id = self.client.subscribe(new_filter, None).await;
 				}
 			}
 		}
-		Err(anyhow::anyhow!("Bot stopped running"))
 	}
 
 	async fn reply(&self, cleaned_url: &str, event_to_reply: &Event) -> anyhow::Result<()> {
