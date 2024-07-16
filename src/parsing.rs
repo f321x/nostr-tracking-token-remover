@@ -39,6 +39,9 @@ impl Parser {
 			if let Ok(Some(spotify_link)) = self.parse_spotify_url(&url) {
 				cleaned_links.push(spotify_link);
 			}
+			if let Ok(Some(substack_link)) = self.parse_substack_url(&url) {
+				cleaned_links.push(substack_link);
+			}
 		}
 		if !cleaned_links.is_empty() {
 			Ok(Some(cleaned_links.join("\n\n")))
@@ -93,6 +96,27 @@ impl Parser {
 			"pp",
 		];
 		self.parse_url(parsed_url, &valid_hosts, &tracking_params)
+	}
+
+	fn parse_substack_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
+		let tracking_params = [
+			"utm_source",
+			"utm_medium",
+			"utm_campaign",
+			"utm_term",
+			"utm_content",
+			"source",
+			"r", // referral parameter
+			"s", // subscriber parameter
+		];
+
+		let host = parsed_url.host_str().unwrap_or("");
+
+		if host == "www.substack.com" || host == "substack.com" || host.ends_with(".substack.com") {
+			self.parse_url(parsed_url, &[host], &tracking_params)
+		} else {
+			Ok(None)
+		}
 	}
 
 	fn parse_spotify_url(&self, parsed_url: &Url) -> anyhow::Result<Option<String>> {
@@ -344,6 +368,58 @@ mod tests {
 		assert_eq!(
 			result,
 			Some("https://www.instagram.com/p/ABC123/?hl=en&user=johndoe".to_string())
+		);
+	}
+
+	#[test]
+	fn test_remove_substack_tracking_tokens() {
+		let parser = Parser::new().unwrap();
+
+		// Test case 1: URL with tracking tokens
+		let url_with_tokens = Url::parse("https://example.substack.com/p/article-title?utm_source=newsletter&utm_medium=email&utm_campaign=promotion").unwrap();
+		let expected_clean_url =
+			Url::parse("https://example.substack.com/p/article-title").unwrap();
+		assert_eq!(
+			parser.parse_substack_url(&url_with_tokens).unwrap(),
+			Some(expected_clean_url.to_string())
+		);
+
+		// Test case 2: URL without tracking tokens
+		let url_without_tokens =
+			Url::parse("https://example.substack.com/p/article-title").unwrap();
+		assert_eq!(
+			parser.parse_substack_url(&url_without_tokens).unwrap(),
+			None
+		);
+
+		// Test case 3: URL with mixed parameters
+		let url_mixed = Url::parse("https://www.substack.com/profile/12345-author-name?utm_source=substack&r=abcde&foo=bar").unwrap();
+		let expected_mixed_clean = "https://www.substack.com/profile/12345-author-name?foo=bar";
+		assert_eq!(
+			parser.parse_substack_url(&url_mixed).unwrap(),
+			Some(expected_mixed_clean.to_string())
+		);
+
+		// Test case 4: Non-Substack URL
+		let non_substack_url =
+			Url::parse("https://www.example.com?param1=value1&utm_source=test").unwrap();
+		assert_eq!(parser.parse_substack_url(&non_substack_url).unwrap(), None);
+
+		// Test case 5: Substack URL with subscriber parameter
+		let url_with_subscriber =
+			Url::parse("https://example.substack.com/p/article-title?s=r").unwrap();
+		let expected_subscriber_clean = "https://example.substack.com/p/article-title";
+		assert_eq!(
+			parser.parse_substack_url(&url_with_subscriber).unwrap(),
+			Some(expected_subscriber_clean.to_string())
+		);
+
+		// Test case 6: Substack main domain URL
+		let main_domain_url = Url::parse("https://substack.com/inbox?utm_source=substack").unwrap();
+		let expected_main_domain_clean = "https://substack.com/inbox";
+		assert_eq!(
+			parser.parse_substack_url(&main_domain_url).unwrap(),
+			Some(expected_main_domain_clean.to_string())
 		);
 	}
 }
