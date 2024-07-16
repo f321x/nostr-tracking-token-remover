@@ -18,7 +18,7 @@ pub struct Bot {
 
 fn format_reply_text(cleaned_url: &str) -> String {
 	format!(
-		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nZap this bot to keep it alive and report bugs on Github",
+		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nZap this bot to keep it alive :)",
 		cleaned_url
 	)
 }
