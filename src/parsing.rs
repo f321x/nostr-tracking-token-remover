@@ -185,6 +185,11 @@ impl Parser {
 			.map(|(k, v)| (k.into_owned(), v.into_owned()))
 			.collect();
 
+		// Check if there are any non-empty query parameters that are not tracking params
+		if original_pairs.iter().all(|(_, v)| v.is_empty()) {
+			return Ok(None);
+		}
+
 		let filtered_pairs: Vec<(String, String)> = original_pairs
 			.iter()
 			.filter(|(key, _)| !tracking_params.contains(key.as_str()))
@@ -242,6 +247,24 @@ mod tests {
 		let non_youtube_url =
 			Url::parse("https://www.example.com?param1=value1&utm_source=test").unwrap();
 		assert_eq!(parser.parse_youtube_url(&non_youtube_url).unwrap(), None);
+
+		// Test case 5: Empty query param only
+		let empty_tracking_token =
+			Url::parse("https://www.youtube.com/watch?v=dQw4w9WgXcQ?si=").unwrap();
+		assert_eq!(
+			parser.parse_youtube_url(&empty_tracking_token).unwrap(),
+			None
+		);
+
+		// Test case 6: Empty query param and tracking param
+		let mixed_params_url =
+			Url::parse("https://www.youtube.com/watch?v=dQw4w9WgXcQ&si=ABCDEFG&utm_source=")
+				.unwrap();
+		let expected = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+		assert_eq!(
+			parser.parse_youtube_url(&mixed_params_url).unwrap(),
+			Some(expected.to_string())
+		);
 	}
 
 	#[test]
