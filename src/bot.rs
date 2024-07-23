@@ -7,6 +7,7 @@ use std::{
 	collections::HashSet,
 	sync::{Arc, RwLock},
 };
+use tokio::sync::broadcast::error::RecvError;
 
 pub struct Bot {
 	client: Client,
@@ -101,6 +102,10 @@ impl Bot {
 							}
 						}
 					}
+				}
+				Err(RecvError::Lagged(n)) => {
+					error!("Lagged notifications: {n}");
+					continue;
 				}
 				Err(e) => {
 					error!("Error receiving notifications: {}", e);
