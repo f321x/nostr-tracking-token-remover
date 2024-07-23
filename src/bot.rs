@@ -2,6 +2,7 @@ use crate::parsing::Parser;
 use anyhow::Context;
 use log::{debug, error, info};
 use nostr_sdk::prelude::*;
+use nostr_sdk::TagKind::SingleLetter;
 use std::{
 	collections::HashSet,
 	sync::{Arc, RwLock},
@@ -51,8 +52,11 @@ impl Bot {
 		client.add_relay("wss://nostr.land").await?;
 		client.add_relay("wss://nostr.oxtr.dev").await?;
 		client.add_relay("wss://nostr.fmt.wiz.biz").await?;
-		client.add_relay("wss://bitcoiner.social").await?;
-		client.add_relay("wss://relay.wellorder.net").await?;
+		client.add_relay("wss://nostr.bitcoiner.social").await?;
+		client.add_relay("wss://nostr-pub.wellorder.net").await?;
+		client.add_relay("wss://nostr-pub.semisol.dev").await?;
+		client.add_relay("wss://nostr.vulpem.com").await?;
+		client.add_relay("wss://nostr.cercatrova.me").await?;
 		client.connect().await;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
@@ -146,12 +150,18 @@ impl Bot {
 				"This bot has replied to {} events with tracking tokens in the last 3 days.\nZap this bot to incentivize developement.\nFind the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover",
 				counter
 			);
-			let announcement_event = EventBuilder::text_note(
-				announcement_message,
-				[Tag::public_key(self.announcement_tag_npub)],
-			)
-			.to_event(&self.keys)
-			.context("Error signing announcement message.")?;
+
+			let custom_tag = Tag::custom(
+				SingleLetter(SingleLetterTag::lowercase(Alphabet::P)),
+				vec![
+					self.announcement_tag_npub.to_hex(),
+					String::new(),
+					"mention".to_string(),
+				],
+			);
+			let announcement_event = EventBuilder::text_note(announcement_message, [custom_tag])
+				.to_event(&self.keys)
+				.context("Error signing announcement message.")?;
 			if let Err(e) = self.client.send_event(announcement_event).await {
 				error!("Error sending announcement event: {}", e);
 			}
