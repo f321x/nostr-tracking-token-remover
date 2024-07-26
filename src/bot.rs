@@ -1,4 +1,3 @@
-use crate::parsing::Parser;
 use anyhow::Context;
 use log::{debug, error, info};
 use nostr_sdk::prelude::*;
@@ -8,7 +7,6 @@ pub struct Bot {
 	client: Client,
 	keys: Keys,
 	filters: Vec<Filter>,
-	parser: Parser,
 	filter_counter: RwLock<u64>,
 	announcement_tag_npub: PublicKey,
 }
@@ -18,6 +16,12 @@ fn format_reply_text(cleaned_url: &str) -> String {
 		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nZap this bot to keep it alive and report bugs on Github",
 		cleaned_url
 	)
+}
+
+fn sanitize_and_join_urls(note: &str) -> Option<String> {
+	let sanitized = untrack::clean_urls_from_any_text(note);
+
+	sanitized.map(|sanitized| sanitized.join("\n\n"))
 }
 
 impl Bot {
@@ -57,7 +61,6 @@ impl Bot {
 			client,
 			keys,
 			filters: vec![note_filter],
-			parser: Parser::new()?,
 			filter_counter: RwLock::new(0),
 			announcement_tag_npub,
 		}))
@@ -72,9 +75,7 @@ impl Bot {
 
 		while let Ok(notification) = notifications.recv().await {
 			if let RelayPoolNotification::Event { event, .. } = notification {
-				if let Some(link_without_tracker) =
-					self.parser.parse_event_content(event.content())?
-				{
+				if let Some(link_without_tracker) = sanitize_and_join_urls(event.content()) {
 					debug!("Detected tracking token: {}", &link_without_tracker);
 					if let Err(e) = self.reply(&link_without_tracker, &event).await {
 						error!("Error replying to event: {}", e);

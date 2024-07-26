@@ -1,9 +1,8 @@
 mod bot;
-mod parsing;
 
 use anyhow::Result;
 use bot::Bot;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use std::env;
 
 #[tokio::main]

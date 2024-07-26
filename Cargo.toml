@@ -6,14 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.86"
-dotenv = "0.15.0"
-env_logger = "0.11.3"
-linkify = "0.10.0"
-log = "0.4.22"
-nostr-sdk = "0.32.0"
-tokio = "1.38.0"
-url = "2.5.2"
+anyhow = "1.0"
+dotenvy = "0.15"
+env_logger = "0.11"
+linkify = "0.10"
+log = "0.4"
+nostr-sdk = "0.33"
+tokio = "1.39"
+untrack = "0.1"
+url = "2.5"
 
 [profile.release]
 lto = true
