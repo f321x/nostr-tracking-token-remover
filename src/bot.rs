@@ -1,7 +1,12 @@
 use anyhow::Context;
 use log::{debug, error, info};
 use nostr_sdk::prelude::*;
-use std::sync::{Arc, RwLock};
+use nostr_sdk::TagKind::SingleLetter;
+use std::{
+	collections::HashSet,
+	sync::{Arc, RwLock},
+};
+use tokio::sync::broadcast::error::RecvError;
 
 pub struct Bot {
 	client: Client,
@@ -13,7 +18,7 @@ pub struct Bot {
 
 fn format_reply_text(cleaned_url: &str) -> String {
 	format!(
-		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nZap this bot to keep it alive and report bugs on Github",
+		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nZap this bot to keep it alive :)",
 		cleaned_url
 	)
 }
@@ -52,8 +57,11 @@ impl Bot {
 		client.add_relay("wss://nostr.land").await?;
 		client.add_relay("wss://nostr.oxtr.dev").await?;
 		client.add_relay("wss://nostr.fmt.wiz.biz").await?;
-		client.add_relay("wss://bitcoiner.social").await?;
-		client.add_relay("wss://relay.wellorder.net").await?;
+		client.add_relay("wss://nostr.bitcoiner.social").await?;
+		client.add_relay("wss://nostr-pub.wellorder.net").await?;
+		client.add_relay("wss://nostr-pub.semisol.dev").await?;
+		client.add_relay("wss://nostr.vulpem.com").await?;
+		client.add_relay("wss://nostr.cercatrova.me").await?;
 		client.connect().await;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
@@ -72,18 +80,53 @@ impl Bot {
 
 		let _subscription_id = self.client.subscribe(self.filters.clone(), None).await;
 		let mut notifications = self.client.notifications();
+		let mut replied_events: HashSet<[u8; 32]> = HashSet::new();
+		let mut reconnect_counter = 0;
 
-		while let Ok(notification) = notifications.recv().await {
-			if let RelayPoolNotification::Event { event, .. } = notification {
-				if let Some(link_without_tracker) = sanitize_and_join_urls(event.content()) {
-					debug!("Detected tracking token: {}", &link_without_tracker);
-					if let Err(e) = self.reply(&link_without_tracker, &event).await {
-						error!("Error replying to event: {}", e);
+		loop {
+			match notifications.recv().await {
+				Ok(notification) => {
+					if let RelayPoolNotification::Event { event, .. } = notification {
+						if replied_events.contains(&event.id().to_bytes()) {
+							continue;
+						}
+
+						if let Some(link_without_tracker) =
+							sanitize_and_join_urls(event.content())
+						{
+							debug!("Detected tracking token: {}", &link_without_tracker);
+							if let Err(e) = self.reply(&link_without_tracker, &event).await {
+								error!("Error replying to event: {}", e);
+							}
+							replied_events.insert(event.id().to_bytes());
+							if replied_events.len() > 1500000 {
+								// 32 bytes * 1500000 = ~50 MB = forever
+								replied_events.clear();
+							}
+						}
 					}
+				}
+				Err(RecvError::Lagged(n)) => {
+					error!("Lagged notifications: {n}");
+					continue;
+				}
+				Err(e) => {
+					error!("Error receiving notifications: {}", e);
+					reconnect_counter += 1;
+					self.client.unsubscribe_all().await;
+					tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+					self.client.disconnect().await?;
+					tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+					if reconnect_counter > 10 {
+						return Err(anyhow::anyhow!("Too many reconnects"));
+					}
+					self.client.connect().await;
+					let new_filter =
+						vec![Filter::new().kind(Kind::TextNote).since(Timestamp::now())];
+					let _subscription_id = self.client.subscribe(new_filter, None).await;
 				}
 			}
 		}
-		Err(anyhow::anyhow!("Bot stopped running"))
 	}
 
 	async fn reply(&self, cleaned_url: &str, event_to_reply: &Event) -> anyhow::Result<()> {
@@ -115,12 +158,18 @@ impl Bot {
 				"This bot has replied to {} events with tracking tokens in the last 3 days.\nZap this bot to incentivize developement.\nFind the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover",
 				counter
 			);
-			let announcement_event = EventBuilder::text_note(
-				announcement_message,
-				[Tag::public_key(self.announcement_tag_npub)],
-			)
-			.to_event(&self.keys)
-			.context("Error signing announcement message.")?;
+
+			let custom_tag = Tag::custom(
+				SingleLetter(SingleLetterTag::lowercase(Alphabet::P)),
+				vec![
+					self.announcement_tag_npub.to_hex(),
+					String::new(),
+					"mention".to_string(),
+				],
+			);
+			let announcement_event = EventBuilder::text_note(announcement_message, [custom_tag])
+				.to_event(&self.keys)
+				.context("Error signing announcement message.")?;
 			if let Err(e) = self.client.send_event(announcement_event).await {
 				error!("Error sending announcement event: {}", e);
 			}
