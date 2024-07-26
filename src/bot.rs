@@ -91,8 +91,7 @@ impl Bot {
 							continue;
 						}
 
-						if let Some(link_without_tracker) =
-							sanitize_and_join_urls(event.content())
+						if let Some(link_without_tracker) = sanitize_and_join_urls(event.content())
 						{
 							debug!("Detected tracking token: {}", &link_without_tracker);
 							if let Err(e) = self.reply(&link_without_tracker, &event).await {
