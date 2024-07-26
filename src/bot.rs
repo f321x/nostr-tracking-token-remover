@@ -62,6 +62,8 @@ impl Bot {
 		client.add_relay("wss://nostr-pub.semisol.dev").await?;
 		client.add_relay("wss://nostr.vulpem.com").await?;
 		client.add_relay("wss://nostr.cercatrova.me").await?;
+		client.add_relay("wss://nostrrelay.com").await?;
+		client.add_relay("wss://offchain.pub").await?;
 		client.connect().await;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
