@@ -18,7 +18,7 @@ pub struct Bot {
 
 fn format_reply_text(cleaned_url: String, diff: String) -> String {
 	format!(
-		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nThe following tracking tokens have been removed from the end of the URL: {}\nZap this bot to keep it alive :)",
+		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nThe following tracking tokens have been removed from the end of the URL:\n{}\nZap this bot to keep it alive :)",
 		cleaned_url,
 		diff
 	)
@@ -35,7 +35,7 @@ fn sanitize_and_join_urls(note: &str) -> Option<(String, String)> {
 		.iter()
 		.map(|tuple| tuple.1.clone())
 		.collect::<Vec<String>>()
-		.join("\n\n");
+		.join("\n");
 
 	Some((sanitized_urls, removed_parts))
 }
