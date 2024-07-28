@@ -16,12 +16,22 @@ pub struct Bot {
 	announcement_tag_npub: PublicKey,
 }
 
+// original message
+// fn format_reply_text(cleaned_url: String, diff: String) -> String {
+// 	format!(
+// 		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nThe following tracking tokens have been removed from the end of the URL:\n{}\n\nZap this bot to keep it alive :)",
+// 		cleaned_url,
+// 		diff
+// 	)
+// }
+
+// (ai)beautified message
 fn format_reply_text(cleaned_url: String, diff: String) -> String {
 	format!(
-		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nThe following tracking tokens have been removed from the end of the URL:\n{}\n\nZap this bot to keep it alive :)",
-		cleaned_url,
-		diff
-	)
+        "🚨 Tracking tokens detected and removed!\n\n🔗 Clean URL(s):\n{}\n\n❌ Removed tokens:\n{}\n\n📚 Why? This helps protect your privacy.\n\n⚡ Zap to support this bot!",
+        cleaned_url,
+        diff
+    )
 }
 
 fn sanitize_and_join_urls(note: &str) -> Option<(String, String)> {
