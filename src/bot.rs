@@ -173,8 +173,9 @@ impl Bot {
 			*self.filter_counter.write().unwrap() = 0;
 
 			let announcement_message = format!(
-				"This bot has replied to {} events with tracking tokens in the last 3 days.\nZap this bot to incentivize developement.\nFind the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover",
-				counter
+				"This bot has replied to {} events with tracking tokens in the last 3 days.\nZap this bot to incentivize developement.\nFind the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover \n@{}",
+				counter,
+				self.announcement_tag_npub.to_bech32()?
 			);
 
 			let custom_tag = Tag::custom(
