@@ -16,17 +16,28 @@ pub struct Bot {
 	announcement_tag_npub: PublicKey,
 }
 
-fn format_reply_text(cleaned_url: &str) -> String {
+fn format_reply_text(cleaned_url: String, diff: String) -> String {
 	format!(
-		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nZap this bot to keep it alive :)",
-		cleaned_url
+		"Hey, the link you shared contains tracking tokens.\nHere is a link without tracking tokens:\n{}\nThe following tracking tokens have been removed from the end of the URL: {}\nZap this bot to keep it alive :)",
+		cleaned_url,
+		diff
 	)
 }
 
-fn sanitize_and_join_urls(note: &str) -> Option<String> {
-	let sanitized = untrack::clean_urls_from_any_text(note);
+fn sanitize_and_join_urls(note: &str) -> Option<(String, String)> {
+	let sanitized = untrack::clean_urls_and_get_removed_part(note)?;
+	let sanitized_urls = sanitized
+		.iter()
+		.map(|tuple| tuple.0.clone())
+		.collect::<Vec<String>>()
+		.join("\n\n");
+	let removed_parts = sanitized
+		.iter()
+		.map(|tuple| tuple.1.clone())
+		.collect::<Vec<String>>()
+		.join("\n\n");
 
-	sanitized.map(|sanitized| sanitized.join("\n\n"))
+	Some((sanitized_urls, removed_parts))
 }
 
 impl Bot {
@@ -93,10 +104,11 @@ impl Bot {
 							continue;
 						}
 
-						if let Some(link_without_tracker) = sanitize_and_join_urls(event.content())
+						if let Some((link_without_tracker, diff)) =
+							sanitize_and_join_urls(event.content())
 						{
 							debug!("Detected tracking token: {}", &link_without_tracker);
-							if let Err(e) = self.reply(&link_without_tracker, &event).await {
+							if let Err(e) = self.reply(link_without_tracker, diff, &event).await {
 								error!("Error replying to event: {}", e);
 							}
 							replied_events.insert(event.id().to_bytes());
@@ -130,8 +142,13 @@ impl Bot {
 		}
 	}
 
-	async fn reply(&self, cleaned_url: &str, event_to_reply: &Event) -> anyhow::Result<()> {
-		let reply_text = format_reply_text(cleaned_url);
+	async fn reply(
+		&self,
+		cleaned_url: String,
+		diffs: String,
+		event_to_reply: &Event,
+	) -> anyhow::Result<()> {
+		let reply_text = format_reply_text(cleaned_url, diffs);
 		let reply_event =
 			match EventBuilder::text_note_reply(reply_text, event_to_reply, None, None)
 				.to_event(&self.keys)
