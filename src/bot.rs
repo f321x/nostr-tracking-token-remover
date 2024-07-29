@@ -28,7 +28,7 @@ pub struct Bot {
 // (ai)beautified message
 fn format_reply_text(cleaned_url: String, diff: String) -> String {
 	format!(
-        "🚨 Tracking tokens detected and removed!\n\n🔗 Clean URL(s):\n{}\n\n❌ Removed tokens:\n{}\n\n📚 Why? This helps protect your privacy.\n\n⚡ Zap to support this bot!",
+        "🤖 Tracking strings detected and removed!\n\n🔗 Clean URL(s):\n{}\n\n❌ Removed parts:\n{}\n\n📚 Why? This helps protect your privacy.\n\n⚡ Zap to support this bot!",
         cleaned_url,
         diff
     )
