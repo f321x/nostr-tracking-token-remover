@@ -1,5 +1,8 @@
 mod bot;
 
+#[cfg(test)]
+mod bot_tests;
+
 use anyhow::Result;
 use bot::Bot;
 use dotenvy::dotenv;
