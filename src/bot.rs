@@ -19,7 +19,7 @@ pub struct Bot {
 // (ai)beautified message
 fn format_reply_text(cleaned_url: String, diff: String) -> String {
 	format!(
-        "🤖 Tracking strings detected and removed!\n\n🔗 Clean URL(s):\n{}\n\n❌ Removed parts:\n{}\n\n📚 Why? This helps protect your privacy.\n\n⚡ Zap to keep it alive!",
+        "🤖 Tracking strings detected and removed!\n\n🔗 Clean URL(s):\n{}\n\n❌ Removed parts:\n{}",
         cleaned_url,
         diff
     )
@@ -76,6 +76,8 @@ impl Bot {
 		client.add_relay("wss://nostr.cercatrova.me").await?;
 		client.add_relay("wss://nostrrelay.com").await?;
 		client.add_relay("wss://offchain.pub").await?;
+		client.add_relay("wss://nostr.lu.ke").await?;
+		client.add_relay("wss://purplerelay.com").await?;
 		client.connect().await;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
@@ -187,9 +189,17 @@ impl Bot {
 					"mention".to_string(),
 				],
 			);
-			let announcement_event = EventBuilder::text_note(announcement_message, [custom_tag])
-				.to_event(&self.keys)
-				.context("Error signing announcement message.")?;
+
+			let keys = self.keys.clone();
+			let announcement_event = tokio::task::spawn_blocking(move || {
+				let announcement_event =
+					EventBuilder::text_note(announcement_message, [custom_tag])
+						.to_pow_event(&keys, 24)
+						.context("Error signing announcement message.");
+				announcement_event
+			})
+			.await??;
+
 			if let Err(e) = self.client.send_event(announcement_event).await {
 				error!("Error sending announcement event: {}", e);
 			}
