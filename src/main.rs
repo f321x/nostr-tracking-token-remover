@@ -12,7 +12,13 @@ async fn main() -> Result<()> {
 		.init();
 	dotenv().ok();
 
-	let bot = Bot::new(&env::var("NOSTR_NSEC")?, &env::var("ANNOUNCEMENT_TAG")?).await?;
+	let bot = Bot::new(
+		&env::var("NOSTR_NSEC")?,
+		&env::var("ANNOUNCEMENT_TAG")?,
+		env::var("POW_MODE")?.parse()?,
+		env::var("POW_DIFFICULTY")?.parse()?,
+	)
+	.await?;
 	bot.run().await?;
 
 	Ok(())

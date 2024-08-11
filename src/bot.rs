@@ -1,4 +1,5 @@
 use anyhow::Context;
+use bitcoin::pow;
 use log::{debug, error, info};
 use nostr_sdk::prelude::*;
 use nostr_sdk::TagKind::SingleLetter;
@@ -11,6 +12,8 @@ use tokio::sync::broadcast::error::RecvError;
 pub struct Bot {
 	client: Client,
 	keys: Keys,
+	pow_enabled: bool,
+	pow_difficulty: u8,
 	filters: Vec<Filter>,
 	filter_counter: RwLock<u64>,
 	announcement_tag_npub: PublicKey,
@@ -45,6 +48,8 @@ impl Bot {
 	pub async fn new(
 		nostr_private_key: &String,
 		announcement_tag_npub: &String,
+		pow_enabled: bool,
+		pow_difficulty: u8,
 	) -> anyhow::Result<Arc<Self>> {
 		let keys = Keys::parse(nostr_private_key)?;
 		info!("The bot public key is: {}", keys.public_key().to_bech32()?);
@@ -84,6 +89,8 @@ impl Bot {
 		Ok(Arc::new(Bot {
 			client,
 			keys,
+			pow_enabled,
+			pow_difficulty,
 			filters: vec![note_filter],
 			filter_counter: RwLock::new(0),
 			announcement_tag_npub,
@@ -152,7 +159,7 @@ impl Bot {
 		event_to_reply: &Event,
 	) -> anyhow::Result<()> {
 		let reply_text = format_reply_text(cleaned_url, diffs);
-		let reply_event =
+		let reply_event = if !self.pow_enabled {
 			match EventBuilder::text_note_reply(reply_text, event_to_reply, None, None)
 				.to_event(&self.keys)
 			{
@@ -160,7 +167,24 @@ impl Bot {
 				Err(e) => {
 					return Err(anyhow::anyhow!("Error creating reply event: {}", e));
 				}
-			};
+			}
+		} else {
+			let keys_clone = self.keys.clone();
+			let event_to_reply = event_to_reply.clone();
+			let pow_difficulty = self.pow_difficulty;
+			match tokio::task::spawn_blocking(move || {
+				EventBuilder::text_note_reply(reply_text, &event_to_reply, None, None)
+					.to_pow_event(&keys_clone, pow_difficulty)
+					.context("Error creating reply event.")
+			})
+			.await?
+			{
+				Ok(event) => event,
+				Err(e) => {
+					return Err(anyhow::anyhow!("Error creating reply event: {}", e));
+				}
+			}
+		};
 		if let Err(e) = self.client.send_event(reply_event).await {
 			return Err(anyhow::anyhow!("Error sending reply event: {}", e));
 		}
@@ -192,11 +216,9 @@ impl Bot {
 
 			let keys = self.keys.clone();
 			let announcement_event = tokio::task::spawn_blocking(move || {
-				let announcement_event =
-					EventBuilder::text_note(announcement_message, [custom_tag])
-						.to_pow_event(&keys, 24)
-						.context("Error signing announcement message.");
-				announcement_event
+				EventBuilder::text_note(announcement_message, [custom_tag])
+					.to_pow_event(&keys, 24)
+					.context("Error signing announcement message.")
 			})
 			.await??;
 
