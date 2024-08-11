@@ -1,5 +1,4 @@
 use anyhow::Context;
-use bitcoin::pow;
 use log::{debug, error, info};
 use nostr_sdk::prelude::*;
 use nostr_sdk::TagKind::SingleLetter;
