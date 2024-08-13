@@ -85,12 +85,15 @@ impl Bot {
 		client.connect().await;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
+		let dm_filter = Filter::new()
+			.kind(Kind::EncryptedDirectMessage)
+			.since(Timestamp::now());
 		Ok(Arc::new(Bot {
 			client,
 			keys,
 			pow_enabled,
 			pow_difficulty,
-			filters: vec![note_filter],
+			filters: vec![note_filter, dm_filter],
 			filter_counter: RwLock::new(0),
 			announcement_tag_npub,
 		}))
@@ -112,14 +115,34 @@ impl Bot {
 						if replied_events.contains(&event.id().to_bytes()) {
 							continue;
 						}
-
-						if let Some((link_without_tracker, diff)) =
-							sanitize_and_join_urls(event.content())
+						let content = match event.kind() {
+							Kind::TextNote => event.content().to_string(),
+							Kind::EncryptedDirectMessage => {
+								if let Ok(decrypted) = decrypt(
+									self.keys.secret_key()?,
+									event.author_ref(),
+									event.content(),
+								) {
+									replied_events.insert(event.id().to_bytes());
+									if let Err(e) =
+										self.reply_dm_nip04(decrypted, event.author_ref()).await
+									{
+										error!("Error replying to DM: {}", e);
+									}
+									continue;
+								} else {
+									continue;
+								}
+							}
+							_ => continue,
+						};
+						if let Some((link_without_tracker, diff)) = sanitize_and_join_urls(&content)
 						{
 							debug!("Detected tracking token: {}", &link_without_tracker);
 							if let Err(e) = self.reply(link_without_tracker, diff, &event).await {
 								error!("Error replying to event: {}", e);
 							}
+
 							replied_events.insert(event.id().to_bytes());
 							if replied_events.len() > 1500000 {
 								// 32 bytes * 1500000 = ~50 MB = forever
@@ -149,6 +172,38 @@ impl Bot {
 				}
 			}
 		}
+	}
+
+	async fn reply_dm_nip04(
+		&self,
+		dm_content: String,
+		author_pub: &PublicKey,
+	) -> anyhow::Result<()> {
+		let reply_text: String;
+
+		if let Some((link_without_tracker, diff)) = sanitize_and_join_urls(&dm_content) {
+			reply_text = format_reply_text(link_without_tracker, diff);
+		} else {
+			reply_text = "🤖 No tracking strings detected.".to_string();
+		};
+		let event = match EventBuilder::encrypted_direct_msg(
+			&self.keys,
+			author_pub.clone(),
+			reply_text,
+			None,
+		) {
+			Ok(event) => event,
+			Err(e) => {
+				return Err(anyhow::anyhow!("Error creating reply event: {}", e));
+			}
+		};
+		let event = event
+			.to_event(&self.keys)
+			.context("Error signing reply event.")?;
+		if let Err(e) = self.client.send_event(event).await {
+			return Err(anyhow::anyhow!("Error sending reply event: {}", e));
+		}
+		Ok(())
 	}
 
 	async fn reply(
