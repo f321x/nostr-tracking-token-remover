@@ -132,6 +132,7 @@ impl Bot {
 									}
 									continue;
 								} else {
+									error!("Error decrypting DM");
 									continue;
 								}
 							}
