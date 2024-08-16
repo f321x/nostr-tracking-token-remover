@@ -124,8 +124,9 @@ impl Bot {
 									event.content(),
 								) {
 									replied_events.insert(event.id().to_bytes());
-									if let Err(e) =
-										self.reply_dm_nip04(decrypted, event.author_ref()).await
+									if let Err(e) = self
+										.reply_dm_nip04(decrypted, event.author_ref(), &event.id)
+										.await
 									{
 										error!("Error replying to DM: {}", e);
 									}
@@ -174,10 +175,12 @@ impl Bot {
 		}
 	}
 
+	#[allow(deprecated)]
 	async fn reply_dm_nip04(
 		&self,
 		dm_content: String,
 		author_pub: &PublicKey,
+		reply_event_id: &EventId,
 	) -> anyhow::Result<()> {
 		let reply_text: String;
 
@@ -190,7 +193,7 @@ impl Bot {
 			&self.keys,
 			author_pub.clone(),
 			reply_text,
-			None,
+			Some(*reply_event_id),
 		) {
 			Ok(event) => event,
 			Err(e) => {
