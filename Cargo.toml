@@ -11,7 +11,7 @@ dotenvy = "0.15"
 env_logger = "0.11"
 linkify = "0.10"
 log = "0.4"
-nostr-sdk = { version = "0.33", features = ["nip04"] }
+nostr-sdk = { version = "0.33", features = ["nip04", "nip59"] }
 tokio = "1.39"
 untrack = "0.1"
 url = "2.5"

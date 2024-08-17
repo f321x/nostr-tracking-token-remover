@@ -59,7 +59,7 @@ impl Bot {
 
 		client.add_relay("wss://relay.damus.io").await?;
 		client.add_relay("wss://relay.primal.net").await?;
-		client.add_relay("wss://relay.nostr.band").await?;
+		// client.add_relay("wss://relay.nostr.band").await?;
 		client
 			.add_relay("wss://ftp.halifax.rwth-aachen.de/nostr")
 			.await?;
@@ -75,17 +75,28 @@ impl Bot {
 		client.add_relay("wss://nostr.fmt.wiz.biz").await?;
 		client.add_relay("wss://nostr.bitcoiner.social").await?;
 		client.add_relay("wss://nostr-pub.wellorder.net").await?;
-		client.add_relay("wss://nostr-pub.semisol.dev").await?;
 		client.add_relay("wss://nostr.vulpem.com").await?;
 		client.add_relay("wss://nostr.cercatrova.me").await?;
 		client.add_relay("wss://nostrrelay.com").await?;
 		client.add_relay("wss://offchain.pub").await?;
 		client.add_relay("wss://nostr.lu.ke").await?;
 		client.add_relay("wss://purplerelay.com").await?;
+		client.add_relay("wss://relay.nostr.net").await?;
+		client.add_relay("wss://relay.f7z.io").await?;
 		client.connect().await;
+
+		client
+			.set_relay_list(vec![
+				(Url::parse("wss://ftp.halifax.rwth-aachen.de/nostr")?, None),
+				(Url::parse("wss://relay.primal.net")?, None),
+				(Url::parse("wss://nostr.einundzwanzig.space")?, None),
+				(Url::parse("wss://nostr.vulpem.com")?, None),
+			])
+			.await?;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
 		let dm_filter = Filter::new()
+			.pubkey(keys.public_key())
 			.kind(Kind::EncryptedDirectMessage)
 			.since(Timestamp::now());
 		Ok(Arc::new(Bot {
@@ -118,7 +129,7 @@ impl Bot {
 						let content = match event.kind() {
 							Kind::TextNote => event.content().to_string(),
 							Kind::EncryptedDirectMessage => {
-								if let Ok(decrypted) = decrypt(
+								if let Ok(decrypted) = nip04::decrypt(
 									self.keys.secret_key()?,
 									event.author_ref(),
 									event.content(),
@@ -190,6 +201,7 @@ impl Bot {
 		} else {
 			reply_text = "🤖 No tracking strings detected.".to_string();
 		};
+		tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 		let event = match EventBuilder::encrypted_direct_msg(
 			&self.keys,
 			author_pub.clone(),
