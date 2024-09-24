@@ -49,50 +49,30 @@ impl Bot {
 		announcement_tag_npub: &String,
 		pow_enabled: bool,
 		pow_difficulty: u8,
+		relays: Vec<String>,
+		outbox_relays: Vec<String>,
 	) -> anyhow::Result<Arc<Self>> {
 		let keys = Keys::parse(nostr_private_key)?;
 		info!("The bot public key is: {}", keys.public_key().to_bech32()?);
 
+		info!("Announcement tag: {}", announcement_tag_npub);
 		let announcement_tag_npub = PublicKey::from_bech32(announcement_tag_npub)?;
 
 		let client = Client::new(&keys);
 
-		client.add_relay("wss://relay.damus.io").await?;
-		client.add_relay("wss://relay.primal.net").await?;
-		// client.add_relay("wss://relay.nostr.band").await?;
-		client
-			.add_relay("wss://ftp.halifax.rwth-aachen.de/nostr")
-			.await?;
-		client.add_relay("wss://nostr.mom").await?;
-		client.add_relay("wss://relay.nostrplebs.com").await?;
-		client.add_relay("wss://relay.mostr.pub").await?;
-		client.add_relay("wss://relay.momostr.pink").await?;
-		client.add_relay("wss://nos.lol").await?;
-		client.add_relay("wss://nostr.einundzwanzig.space").await?;
-		client.add_relay("wss://relay.snort.social").await?;
-		client.add_relay("wss://nostr.land").await?;
-		client.add_relay("wss://nostr.oxtr.dev").await?;
-		client.add_relay("wss://nostr.fmt.wiz.biz").await?;
-		client.add_relay("wss://nostr.bitcoiner.social").await?;
-		client.add_relay("wss://nostr-pub.wellorder.net").await?;
-		client.add_relay("wss://nostr.vulpem.com").await?;
-		client.add_relay("wss://nostr.cercatrova.me").await?;
-		client.add_relay("wss://nostrrelay.com").await?;
-		client.add_relay("wss://offchain.pub").await?;
-		client.add_relay("wss://nostr.lu.ke").await?;
-		client.add_relay("wss://purplerelay.com").await?;
-		client.add_relay("wss://relay.nostr.net").await?;
-		client.add_relay("wss://relay.f7z.io").await?;
+		for relay in &relays {
+			client
+				.add_relay(relay)
+				.await
+				.context(format!("Error adding relay: {}", relay))?;
+		}
 		client.connect().await;
 
-		client
-			.set_relay_list(vec![
-				(Url::parse("wss://ftp.halifax.rwth-aachen.de/nostr")?, None),
-				(Url::parse("wss://relay.primal.net")?, None),
-				(Url::parse("wss://nostr.einundzwanzig.space")?, None),
-				(Url::parse("wss://nostr.vulpem.com")?, None),
-			])
-			.await?;
+		let outbox_url_vec: Vec<(Url, Option<RelayMetadata>)> = outbox_relays
+			.iter()
+			.map(|relay| (Url::parse(relay).unwrap(), None))
+			.collect();
+		client.set_relay_list(outbox_url_vec).await?;
 
 		let note_filter = Filter::new().kind(Kind::TextNote).since(Timestamp::now());
 		let dm_filter = Filter::new()
