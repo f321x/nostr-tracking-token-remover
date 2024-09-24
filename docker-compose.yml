@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  nostr-tracking-token-remover:
+    build: .
+    environment:
+      - NOSTR_NSEC=${NOSTR_NSEC}
+      - ANNOUNCEMENT_TAG=${ANNOUNCEMENT_TAG}
+      - POW_MODE=${POW_MODE}
+      - POW_DIFFICULTY=${POW_DIFFICULTY}
