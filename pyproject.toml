@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nostr-tracking-token-remover"
+version = "0.1.0"
+description = "Nostr bot that fetches kind 1 events, parses urls,removes tracking tokens and replies sanitized url back to the OP."
+authors = [{name = "f321x", email = "f@f321x.com"}]
+dependencies = [
+    "electrum-aionostr[crypto]~=0.1",
+    "uvloop~=0.22",
+    "python-dotenv~=1.2"
+]
+requires-python = ">=3.14"

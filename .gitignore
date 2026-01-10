@@ -1,3 +1,5 @@
 /target
 .env
 Cargo.lock
+.venv
+.idea/
