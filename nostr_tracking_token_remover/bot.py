@@ -54,13 +54,14 @@ class TrackingTokenRemover(Bot):
 
             reply_text = self._format_reply_text(cleaned_urls, removed_parts)
 
-            # Create reply event with NIP-10 tags
-            tags = self._get_reply_tags(kind1_event)
+            reply_tags = [
+                ['e', kind1_event.id],
+            ]
 
             reply_event = NostrEvent(
                 kind=1,
                 content=reply_text,
-                tags=tags,
+                tags=reply_tags,
                 pubkey=self.pubkey,
             ).add_expiration_tag(
                 expiration_ts=int(time.time()) + 63072000,  # 2 years
@@ -160,32 +161,6 @@ class TrackingTokenRemover(Bot):
             f"❌ Removed parts:\n{diff}"
         )
 
-    @staticmethod
-    def _get_reply_tags(event: NostrEvent) -> list:
-        tags = []
-        root_id = None
-
-        # Find root
-        if event.tags:
-            for tag in event.tags:
-                if tag[0] == 'e' and len(tag) >= 4 and tag[3] == 'root':
-                    root_id = tag[1]
-                    break
-
-            if not root_id:
-                for tag in event.tags:
-                    if tag[0] == 'e':
-                        root_id = tag[1]
-                        break
-
-        if root_id:
-            tags.append(["e", root_id, "", "root"])
-            tags.append(["e", event.id, "", "reply"])
-        else:
-            tags.append(["e", event.id, "", "root"])
-
-        tags.append(["p", event.pubkey])
-        return tags
 
 def profile_from_env() -> dict:
     from os import environ as env
