@@ -1,8 +1,0 @@
-{
-    "nixEnvSelector.nixFile": "${workspaceFolder}/shell.nix",
-    "editor.defaultFormatter": "rust-lang.rust-analyzer",
-    "editor.formatOnPaste": true,
-    "editor.formatOnSave": true,
-    "notebook.formatOnSave.enabled": true,
-    "files.autoSave": "onFocusChange"
-}
