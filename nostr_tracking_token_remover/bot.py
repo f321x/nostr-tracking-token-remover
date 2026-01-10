@@ -49,10 +49,10 @@ class TrackingTokenRemover(Bot):
             if not result:
                 continue
 
-            cleaned_text, removed_parts = result
+            cleaned_urls, removed_parts = result
             self.logger.debug(f"Detected tracking token in event {kind1_event.id}")
 
-            reply_text = self._format_reply_text(cleaned_text, removed_parts)
+            reply_text = self._format_reply_text(cleaned_urls, removed_parts)
 
             # Create reply event with NIP-10 tags
             tags = self._get_reply_tags(kind1_event)
@@ -91,8 +91,8 @@ class TrackingTokenRemover(Bot):
 
             result = sanitize_urls_in_any_text(decrypted_content)
             if result:
-                cleaned_text, removed_parts = result
-                reply_text = self._format_reply_text(cleaned_text, removed_parts)
+                cleaned_urls, removed_parts = result
+                reply_text = self._format_reply_text(cleaned_urls, removed_parts)
             else:
                 reply_text = "🤖 No tracking strings detected."
 
@@ -153,10 +153,10 @@ class TrackingTokenRemover(Bot):
         return profile_event
 
     @staticmethod
-    def _format_reply_text(cleaned_url: str, diff: str) -> str:
+    def _format_reply_text(cleaned_urls: str, diff: str) -> str:
         return (
             f"🤖 Tracking strings detected and removed!\n\n"
-            f"🔗 Clean URL(s):\n{cleaned_url}\n\n"
+            f"🔗 Clean URL(s):\n{cleaned_urls}\n\n"
             f"❌ Removed parts:\n{diff}"
         )
 
