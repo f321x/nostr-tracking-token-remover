@@ -1,0 +1,696 @@
+{
+  "providers": {
+    "amazon": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?amazon(?:\\.[a-z]{2,})",
+      "completeProvider": false,
+      "rules": [
+        "hv[a-z]{3,6}",
+        "vtargid",
+        "h",
+        "hydadcr",
+        "psc",
+        "linkId",
+        "language",
+        "condition",
+        "marketplaceID",
+        "s",
+        "url",
+        "Source",
+        "sc_[a-z]+",
+        "primeCampaignId",
+        "sub",
+        "__mk_.+",
+        "lmdsid",
+        "refinements",
+        "rps"
+      ],
+      "referralMarketing": [
+        "tag"
+      ],
+      "exceptions": [],
+      "rawRules": [
+        "\\b\\/.+(?=\\/dp)"
+      ],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?amazon(?:\\.[a-z]{2,})\\/gp\\/[a-z]\\.html?.*U=([^&]*)",
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?amazon(?:\\.[a-z]{2,})\\/gp\\/redirect\\.html?.*location=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "aliexpress": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?aliexpress(?:\\.[a-z]{2,})",
+      "completeProvider": false,
+      "rules": [
+        "srcSns",
+        "mb",
+        "tid",
+        "image",
+        "businessType",
+        "templateId",
+        "title",
+        "[A-Za-z]*_?platform",
+        "cpt",
+        "terminal_id",
+        "aff_[a-z_]+",
+        "trace",
+        "tt",
+        "sk",
+        "s",
+        "spreadType",
+        "tmLog",
+        "bizType",
+        "mergeHashcode",
+        "description",
+        "templateKey"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "bing": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bing\\.com",
+      "completeProvider": false,
+      "rules": [
+        "pq",
+        "toWww",
+        "redig",
+        "rlid"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "change.org": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?change\\.org",
+      "completeProvider": false,
+      "rules": [
+        "recruite[a-z_]+",
+        "cs_tk",
+        "source_location",
+        "pt",
+        "user_flow"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "facebook": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?facebook\\.com",
+      "completeProvider": false,
+      "rules": [
+        "h",
+        "login_source",
+        "_[a-z_]+"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "globalRules": {
+      "urlPattern": ".*",
+      "completeProvider": false,
+      "rules": [
+        "pfm_[a-zA-Z0-9]*",
+        "seller[Ii]d",
+        "franq",
+        "opn",
+        "mktportal",
+        "gclsrc",
+        "_*twitter_impression",
+        "partner",
+        "cm_mmc",
+        "epar",
+        "hl",
+        "s_term",
+        "ref_noscript"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "google": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}",
+      "completeProvider": false,
+      "rules": [
+        "client",
+        "oe",
+        "docid",
+        "imgrefurl",
+        "amp"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}\\/amp\\/s\\/([^&]*)",
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}\\/img.+(?:\\?|&)imgurl=([^&]*)",
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?google(?:\\.[a-z]{2,}){1,}\\/aclk.+(?:\\?|&)adurl=([^&]*)"
+      ],
+      "forceRedirection": true
+    },
+    "kabum": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?kabum\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "zanpid",
+        "codigo"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?kabum\\.com\\.br\\/cgi-local\\/site\\/produtos\\/descricao_ofertas\\.cgi\\?.+"
+      ],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "mercadolibre": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?mercadoli[bv]re\\.com",
+      "completeProvider": false,
+      "rules": [
+        "matt_[a-z]+",
+        "reco_[a-z]+",
+        "\\bc_[a-z]+",
+        "no[Ii]ndex",
+        "contextual",
+        "[a-zA-Z]+ariation",
+        "position",
+        "type",
+        "tracking_id",
+        "quantity",
+        "reference_id"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "telefonicavivo": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?vivo\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "id_origem_vivo",
+        "origin",
+        "pid",
+        "is_retargeting",
+        "shortlink",
+        "af_[a-z]+",
+        "c(?:_.+)?"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "twitter": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?twitter\\.com",
+      "completeProvider": false,
+      "rules": [
+        "original_referer",
+        "via"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "globo": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?globo\\.com",
+      "completeProvider": false,
+      "rules": [
+        "versao"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "americanas": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?americanas\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "WT\\.srch",
+        "acc",
+        "o",
+        "i"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "duckduckgo": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?(duckduckgo\\.com)",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?duckduckgo.com\\/l\\/\\?.*uddg=([^&]*)",
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?duckduckgo\\.com\\/y\\.js\\?.*u3=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "dell": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?dell\\.com",
+      "completeProvider": false,
+      "rules": [
+        "dgseg",
+        "cid",
+        "ran[a-zA-Z]",
+        "gacd",
+        "dgc",
+        "acd",
+        "lid",
+        "VEN3"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "onelink": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?onelink\\.me",
+      "completeProvider": false,
+      "rules": [
+        "af_[a-z]+",
+        "pid",
+        "c"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "myanimelist": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?myanimelist\\.net",
+      "completeProvider": false,
+      "rules": [
+        "_[a-z]+",
+        "from",
+        "id"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "dartsearch": {
+      "urlPattern": "^https?:\\/\\/clickserve\\.dartsearch\\.net",
+      "completeProvider": true,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/clickserve\\.dartsearch\\.net\\/link\\/click\\?.*ds_dest_url=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "googleplay": {
+      "urlPattern": "^https?:\\/\\/play\\.google\\.com",
+      "completeProvider": false,
+      "rules": [
+        "pcampaignid"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "elpais": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?elpais\\.com",
+      "completeProvider": false,
+      "rules": [
+        "ssm",
+        "rel",
+        "prod",
+        "o",
+        "prm"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "primevideo": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?primevideo\\.com",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [
+        "\\/ref=[^/?]*"
+      ],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "awscloud": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?awscloud\\.com",
+      "completeProvider": false,
+      "rules": [
+        "sc_[a-z]+",
+        "trk"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "natura": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?natura\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "iprom_[a-z]+",
+        "list_[a-z]+"
+      ],
+      "referralMarketing": [
+        "consultoria"
+      ],
+      "exceptions": [],
+      "rawRules": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "compracerta": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?compracerta\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "utmi_[a-z]+"
+      ],
+      "referralMarketing": [
+        "indicator.*"
+      ],
+      "exceptions": [],
+      "rawRules": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "awin": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?awin1\\.com",
+      "completeProvider": true,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?awin1\\.com\\/cread\\.php?.*ued=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "zattini": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?zattini\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "campaign"
+      ],
+      "referralMarketing": [],
+      "exceptions": [],
+      "rawRules": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "spotify": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?spotify\\.com",
+      "completeProvider": false,
+      "rules": [
+        "splot"
+      ],
+      "referralMarketing": [],
+      "exceptions": [],
+      "rawRules": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "mozilla": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?mozilla\\.org",
+      "completeProvider": false,
+      "rules": [
+        "redirect[a-z]+"
+      ],
+      "referralMarketing": [],
+      "exceptions": [],
+      "rawRules": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "cooldeal": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?cooldeal\\.by",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?cooldeal\\.by\\/redirect\\/.*to=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "bbc": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?bbc\\.com",
+      "completeProvider": false,
+      "rules": [
+        "ns_[a-z]+"
+      ],
+      "referralMarketing": [],
+      "exceptions": [],
+      "rawRules": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "vk": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?vk\\.com",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?vk\\.com\\/away\\.php?.*to=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "medium": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?medium\\.com",
+      "completeProvider": false,
+      "rules": [
+        "sectionName"
+      ],
+      "referralMarketing": [],
+      "exceptions": [],
+      "rawRules": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "gp": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?play\\.app\\.goo\\.gl",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?play\\.app\\.goo\\.gl\\/?.*link=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "netshoes": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?netshoes\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "af_.+",
+        "clickid",
+        "pid"
+      ],
+      "referralMarketing": [],
+      "exceptions": [],
+      "rawRules": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "hurb": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?hurb\\.com",
+      "completeProvider": false,
+      "rules": [
+        "cmp"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?hurb\\.com\\/aud\\/([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "submarino": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?submarino\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "chave"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "girafa": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?girafa\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "lmdsid"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "iqbroker": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?iqbroker\\.co",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [
+        "af[a-z_]+",
+        "pid",
+        "c"
+      ],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "extra": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?extra\\.com\\.br",
+      "completeProvider": false,
+      "rules": [
+        "IdSku"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "crunchyroll": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?crunchyroll\\.com",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [
+        "from"
+      ],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "deezer": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?deezer\\.com",
+      "completeProvider": false,
+      "rules": [
+        "redirect_[a-z]+"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "banggood": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?banggood\\.com",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [
+        "zf",
+        "_branch_match_id"
+      ],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "awsevents": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?awsevents\\.com",
+      "completeProvider": false,
+      "rules": [
+        "trk[a-zA-Z]*",
+        "sc_[a-z]+"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "ubi": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?ubi\\.com",
+      "completeProvider": false,
+      "rules": [
+        "cache"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "allshops": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?allshops\\.me",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?allshops\\.me\\/redirect\\/.+to=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "shareasale": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?shareasale\\.com",
+      "completeProvider": false,
+      "rules": [],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [
+        "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?shareasale\\.com\\/r\\.cfm.+urllink=([^&]*)"
+      ],
+      "forceRedirection": false
+    },
+    "udemy": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?udemy\\.com",
+      "completeProvider": false,
+      "rules": [
+        "ran[A-Za-z]+",
+        "LSNPUBID"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    }
+  }
+}

@@ -23,7 +23,7 @@ class Bot:
         relays: Sequence[str],
         nostr_nsec: str,
     ):
-        self.logger = logging.getLogger(dvm_name)
+        self.logger = logging.getLogger('nostr-bot')
         self._private_key = PrivateKey.from_nsec(nostr_nsec)
         self.pubkey = self._private_key.public_key.hex()
         self.relays = set(normalize_websocket_urls(relays))

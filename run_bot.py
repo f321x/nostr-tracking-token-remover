@@ -29,6 +29,7 @@ async def main():
     load_dotenv()
     relays: list[str] = [r.strip() for r in env['NOSTR_RELAYS'].split(',')]
     nostr_nsec: str = env['NOSTR_NSEC'].strip()
+    announcement_tag: str = env['ANNOUNCEMENT_TAG'].strip()
 
     log_level: str = env.get('LOG_LEVEL', 'INFO')
     set_up_logger(log_level)
@@ -46,6 +47,7 @@ async def main():
         nostr_nsec=nostr_nsec,
         nostr_profile=profile_from_env(),
         status_event_interval_sec=int(env['STATUS_EVENT_INTERVAL_SEC']),
+        announcement_tag=announcement_tag,
     ) as _bot:
         logger.info(f"tracking token remover running")
         await shutdown_event.wait()

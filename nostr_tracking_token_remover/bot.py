@@ -1,6 +1,10 @@
+import asyncio
+import json
+import time
 from typing import Sequence
 
 from .nostr import Bot
+from .link_sanitizer import sanitize_urls_in_any_text
 
 from electrum_aionostr.event import Event as NostrEvent
 
@@ -13,13 +17,16 @@ class TrackingTokenRemover(Bot):
         nostr_nsec: str,
         nostr_profile: dict,
         status_event_interval_sec: int,
+        announcement_tag: str,
     ):
         Bot.__init__(self, relays=relays, nostr_nsec=nostr_nsec)
         self._profile_info = nostr_profile
         self._status_event_interval_sec = status_event_interval_sec
+        self._announcement_tag = announcement_tag
+        self._events_cleaned_count = 0
 
     async def __aenter__(self):
-        await AIONostrDVM.__aenter__(self)
+        await Bot.__aenter__(self)
         assert self.taskgroup is not None
         self.taskgroup.create_task(self._sanitize_kind1_events())
         self.taskgroup.create_task(self._sanitize_nip04_dms())
@@ -27,7 +34,7 @@ class TrackingTokenRemover(Bot):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await AIONostrDVM.__aexit__(self, exc_type, exc_val, exc_tb)
+        await Bot.__aexit__(self, exc_type, exc_val, exc_tb)
 
     async def _sanitize_kind1_events(self):
         """
@@ -38,7 +45,29 @@ class TrackingTokenRemover(Bot):
             "limit": 0,
         }
         async for kind1_event in self.subscribe_to_filter(query):
-            pass
+            result = sanitize_urls_in_any_text(kind1_event.content)
+            if not result:
+                continue
+
+            cleaned_text, removed_parts = result
+            self.logger.debug(f"Detected tracking token in event {kind1_event.id}")
+
+            reply_text = self._format_reply_text(cleaned_text, removed_parts)
+
+            # Create reply event with NIP-10 tags
+            tags = self._get_reply_tags(kind1_event)
+
+            reply_event = NostrEvent(
+                kind=1,
+                content=reply_text,
+                tags=tags,
+                pubkey=self.pubkey,
+            ).add_expiration_tag(
+                expiration_ts=int(time.time()) + 63072000,  # 2 years
+            ).sign(self._private_key.hex())
+
+            await self.broadcast_nostr_event(reply_event)
+            self._events_cleaned_count += 1
 
     async def _sanitize_nip04_dms(self):
         """
@@ -51,13 +80,68 @@ class TrackingTokenRemover(Bot):
             "tags": ["#p", self.pubkey],
         }
         async for nip04_dm in self.subscribe_to_filter(query):
-            pass
+            try:
+                decrypted_content = self._private_key.decrypt_message(
+                    encoded_message=nip04_dm.content,
+                    public_key_hex=nip04_dm.pubkey,
+                )
+            except Exception:
+                self.logger.debug(f"Failed to decrypt DM {nip04_dm.id}")
+                continue
+
+            result = sanitize_urls_in_any_text(decrypted_content)
+            if result:
+                cleaned_text, removed_parts = result
+                reply_text = self._format_reply_text(cleaned_text, removed_parts)
+            else:
+                reply_text = "🤖 No tracking strings detected."
+
+            # Encrypt reply
+            encrypted_reply = self._private_key.encrypt_message(
+                message=reply_text,
+                public_key_hex=nip04_dm.pubkey,
+            )
+
+            reply_event = NostrEvent(
+                kind=4,
+                content=encrypted_reply,
+                tags=[
+                    ["p", nip04_dm.pubkey],
+                    ["e", nip04_dm.id]
+                ],
+                pubkey=self.pubkey,
+            ).add_expiration_tag(
+                expiration_ts=int(time.time()) + 7_776_000 # 90 days
+            ).sign(self._private_key.hex())
+            await self.broadcast_nostr_event(reply_event)
 
     async def _broadcast_status_event(self):
         """
         Broadcasts a summary kind 1 event every self._status_event_interval_sec.
         """
-        pass
+        while True:
+            await asyncio.sleep(self._status_event_interval_sec)
+
+            count = self._events_cleaned_count
+            self._events_cleaned_count = 0 # Reset counter
+
+            announcement_message = (
+                f"This bot has replied to {count} events with tracking tokens in the last period.\n\n"
+                f"Find the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover"
+            )
+
+            if self._announcement_tag:
+                announcement_message += f"\n@{self._announcement_tag}"
+
+            announcement_event = NostrEvent(
+                kind=1,
+                content=announcement_message,
+                tags=[],
+                pubkey=self.pubkey,
+            )
+            announcement_event = announcement_event.sign(self._private_key.hex())
+
+            await self.broadcast_nostr_event(announcement_event)
 
     async def get_kind0_profile_event(self) -> NostrEvent:
         profile_event = NostrEvent(
@@ -67,6 +151,41 @@ class TrackingTokenRemover(Bot):
             pubkey=self.pubkey,
         )
         return profile_event
+
+    @staticmethod
+    def _format_reply_text(cleaned_url: str, diff: str) -> str:
+        return (
+            f"🤖 Tracking strings detected and removed!\n\n"
+            f"🔗 Clean URL(s):\n{cleaned_url}\n\n"
+            f"❌ Removed parts:\n{diff}"
+        )
+
+    @staticmethod
+    def _get_reply_tags(event: NostrEvent) -> list:
+        tags = []
+        root_id = None
+
+        # Find root
+        if event.tags:
+            for tag in event.tags:
+                if tag[0] == 'e' and len(tag) >= 4 and tag[3] == 'root':
+                    root_id = tag[1]
+                    break
+
+            if not root_id:
+                for tag in event.tags:
+                    if tag[0] == 'e':
+                        root_id = tag[1]
+                        break
+
+        if root_id:
+            tags.append(["e", root_id, "", "root"])
+            tags.append(["e", event.id, "", "reply"])
+        else:
+            tags.append(["e", event.id, "", "root"])
+
+        tags.append(["p", event.pubkey])
+        return tags
 
 def profile_from_env() -> dict:
     from os import environ as env
