@@ -108,6 +108,7 @@ class TrackingTokenRemover(Bot):
             reply_event = NostrEvent(
                 kind=4,
                 content=encrypted_reply,
+                created_at=int(time.time()) + 2,  # add some time so it shows below the request in the chat history
                 tags=[
                     ["p", nip04_dm.pubkey],
                     ["e", nip04_dm.id]
