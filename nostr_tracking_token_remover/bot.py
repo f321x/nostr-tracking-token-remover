@@ -1,7 +1,7 @@
 import asyncio
 import json
 import time
-from typing import Sequence
+from typing import Sequence, List, Optional
 
 from .nostr import Bot
 from .link_sanitizer import sanitize_urls_in_any_text
@@ -62,9 +62,7 @@ class TrackingTokenRemover(Bot):
 
             reply_text = self._format_reply_text(cleaned_urls, removed_parts)
 
-            reply_tags = [
-                ['e', kind1_event.id],
-            ]
+            reply_tags = self._compose_reply_tags(kind1_event)
 
             reply_event = NostrEvent(
                 kind=1,
@@ -77,6 +75,50 @@ class TrackingTokenRemover(Bot):
 
             await self._broadcast_response(reply_event)
             self._events_cleaned_count += 1
+
+    @staticmethod
+    def _compose_reply_tags(event: NostrEvent) -> List[List[str]]:
+        reply_tags = []
+        root_id = None
+        root_relay = ""
+        root_pubkey = None
+
+        e_tags = [t for t in event.tags if len(t) > 0 and t[0] == 'e']
+
+        for tag in e_tags:
+            if len(tag) >= 4 and tag[3] == 'root':
+                root_id = tag[1]
+                root_relay = tag[2] if len(tag) > 2 else ""
+                root_pubkey = tag[4] if len(tag) > 4 else None
+                break
+
+        if root_id is None and e_tags:
+            if len(e_tags[0]) > 1:
+                root_id = e_tags[0][1]
+                root_relay = e_tags[0][2] if len(e_tags[0]) > 2 else ""
+
+        if root_id:
+            root_tag = ["e", root_id, root_relay, "root"]
+            if root_pubkey:
+                root_tag.append(root_pubkey)
+            reply_tags.append(root_tag)
+            reply_tags.append(["e", event.id, "", "reply", event.pubkey])
+        else:
+            reply_tags.append(["e", event.id, "", "root", event.pubkey])
+
+        p_tags = [t for t in event.tags if len(t) > 1 and t[0] == 'p']
+        reply_tags.extend(p_tags)
+
+        p_pubkeys = set(t[1] for t in p_tags if len(t) > 1)
+
+        if event.pubkey not in p_pubkeys:
+            reply_tags.append(["p", event.pubkey])
+            p_pubkeys.add(event.pubkey)
+
+        if root_pubkey and root_pubkey not in p_pubkeys:
+            reply_tags.append(["p", root_pubkey])
+
+        return reply_tags
 
     async def _sanitize_nip04_dms(self):
         """
