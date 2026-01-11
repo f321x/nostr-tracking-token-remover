@@ -12,6 +12,5 @@ dependencies = [
     "uvloop~=0.2",
     "python-dotenv~=1.2",
     "certifi~=2026.1",
-    "python-rapidjson~=1.2"  # for electrum-aionostr
 ]
 requires-python = ">=3.14"
