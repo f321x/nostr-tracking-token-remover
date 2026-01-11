@@ -11,6 +11,8 @@ from electrum_aionostr.event import Event as NostrEvent
 
 class TrackingTokenRemover(Bot):
 
+    BROADCAST_DELAY_SEC = 5
+
     def __init__(
         self, *,
         relays: Sequence[str],
@@ -23,6 +25,7 @@ class TrackingTokenRemover(Bot):
         self._profile_info = nostr_profile
         self._status_event_interval_sec = status_event_interval_sec
         self._announcement_tag = announcement_tag
+        self._response_queue = asyncio.Queue(maxsize=10_000)  # type: asyncio.Queue[NostrEvent]
         self._events_checked_count = 0
         self._events_cleaned_count = 0
 
@@ -32,6 +35,7 @@ class TrackingTokenRemover(Bot):
         self.taskgroup.create_task(self._sanitize_kind1_events())
         self.taskgroup.create_task(self._sanitize_nip04_dms())
         self.taskgroup.create_task(self._broadcast_status_event())
+        self.taskgroup.create_task(self._broadcast_responses())
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -71,7 +75,7 @@ class TrackingTokenRemover(Bot):
                 expiration_ts=int(time.time()) + 63072000,  # 2 years
             ).sign(self._private_key.hex())
 
-            await self.broadcast_nostr_event(reply_event)
+            await self._broadcast_response(reply_event)
             self._events_cleaned_count += 1
 
     async def _sanitize_nip04_dms(self):
@@ -122,7 +126,27 @@ class TrackingTokenRemover(Bot):
             ).add_expiration_tag(
                 expiration_ts=int(time.time()) + 7_776_000 # 90 days
             ).sign(self._private_key.hex())
-            await self.broadcast_nostr_event(reply_event)
+            await self._broadcast_response(reply_event)
+
+    async def _broadcast_response(self, event: NostrEvent):
+        """
+        Puts the response event on the queue to be broadcast. If the queue is full we drop the
+        oldest response.
+        """
+        if self._response_queue.full():
+            event = self._response_queue.get_nowait()
+            self.logger.warn(f"dropping response due to full queue: {event.id}")
+        await self._response_queue.put(event)
+
+    async def _broadcast_responses(self):
+        """
+        To prevent getting our IP rate limited by relays we only broadcast one response every
+        self.BROADCAST_DELAY_SEC.
+        """
+        while True:
+            response_event = await self._response_queue.get()
+            await self.broadcast_nostr_event(response_event)
+            await asyncio.sleep(self.BROADCAST_DELAY_SEC)
 
     async def _broadcast_status_event(self):
         """
