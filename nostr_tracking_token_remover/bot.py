@@ -43,6 +43,7 @@ class TrackingTokenRemover(Bot):
         query = {
             "kinds": [1],
             "limit": 0,
+            "since": int(time.time()),
         }
         async for kind1_event in self.subscribe_to_filter(query):
             result = sanitize_urls_in_any_text(kind1_event.content)
@@ -78,7 +79,8 @@ class TrackingTokenRemover(Bot):
         query = {
             "kinds": [4],
             "limit": 0,
-            "tags": ["#p", self.pubkey],
+            "#p": [self.pubkey],
+            "since": int(time.time()),
         }
         async for nip04_dm in self.subscribe_to_filter(query):
             try:
