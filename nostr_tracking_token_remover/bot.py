@@ -51,7 +51,7 @@ class TrackingTokenRemover(Bot):
                 continue
 
             cleaned_urls, removed_parts = result
-            self.logger.debug(f"Detected tracking token in event {kind1_event.id}")
+            self.logger.info(f"Detected tracking token in event {kind1_event.id}")
 
             reply_text = self._format_reply_text(cleaned_urls, removed_parts)
 
@@ -128,8 +128,9 @@ class TrackingTokenRemover(Bot):
             count = self._events_cleaned_count
             self._events_cleaned_count = 0 # Reset counter
 
+            period_days = self._status_event_interval_sec // 86400
             announcement_message = (
-                f"This bot has replied to {count} events with tracking tokens in the last period.\n\n"
+                f"This bot has replied to {count} events with tracking tokens in the last {period_days} days.\n\n"
                 f"Find the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover"
             )
 
