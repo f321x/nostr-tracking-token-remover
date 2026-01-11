@@ -12,6 +12,7 @@ from typing import Optional, AsyncGenerator, Sequence
 import electrum_aionostr
 from electrum_aionostr.event import Event as NostrEvent
 from electrum_aionostr.key import PrivateKey
+from electrum_aionostr.util import normalize_url
 
 
 class Bot:
@@ -26,7 +27,7 @@ class Bot:
         self.logger = logging.getLogger('nostr-bot')
         self._private_key = PrivateKey.from_nsec(nostr_nsec)
         self.pubkey = self._private_key.public_key.hex()
-        self.relays = set(normalize_websocket_urls(relays))
+        self.relays = set(normalize_url(url) for url in relays)
         self.taskgroup = None  # type: Optional[asyncio.TaskGroup]
         self._main_task = None  # type: Optional[asyncio.Task]
         self._relay_manager = None  # type: Optional[electrum_aionostr.Manager]
@@ -114,7 +115,7 @@ class Bot:
         assert self._relay_manager is not None and self._relay_manager.connected
         async for event in self._relay_manager.get_events(query, single_event=False, only_stored=False):
             yield event
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)  # throttle the loop a bit
 
     async def broadcast_nostr_event(self, event: NostrEvent):
         try:
@@ -148,15 +149,3 @@ class Bot:
             self.logger.debug(f"broadcast kind 0 profile event")
         except Exception:
             self.logger.error(f"failed to broadcast kind 0 profile event")
-
-
-def normalize_websocket_urls(urls: Sequence[str]) -> list[str]:
-    normalized = []
-    for url in urls:
-        url = url.strip().lower()
-        if not url.startswith(('ws://', 'wss://')):
-            url = 'wss://' + url
-        if url.endswith('/'):
-            url = url[:-1]
-        normalized.append(url)
-    return normalized
