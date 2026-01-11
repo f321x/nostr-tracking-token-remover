@@ -23,6 +23,7 @@ class TrackingTokenRemover(Bot):
         self._profile_info = nostr_profile
         self._status_event_interval_sec = status_event_interval_sec
         self._announcement_tag = announcement_tag
+        self._events_checked_count = 0
         self._events_cleaned_count = 0
 
     async def __aenter__(self):
@@ -46,6 +47,8 @@ class TrackingTokenRemover(Bot):
             "since": int(time.time()),
         }
         async for kind1_event in self.subscribe_to_filter(query):
+            self._events_checked_count += 1
+
             result = sanitize_urls_in_any_text(kind1_event.content)
             if not result:
                 continue
@@ -83,6 +86,8 @@ class TrackingTokenRemover(Bot):
             "since": int(time.time()),
         }
         async for nip04_dm in self.subscribe_to_filter(query):
+            self._events_checked_count += 1
+
             try:
                 decrypted_content = self._private_key.decrypt_message(
                     encoded_message=nip04_dm.content,
@@ -126,12 +131,12 @@ class TrackingTokenRemover(Bot):
         while True:
             await asyncio.sleep(self._status_event_interval_sec)
 
-            count = self._events_cleaned_count
-            self._events_cleaned_count = 0 # Reset counter
+            count_cleaned, count_checked = self._events_cleaned_count, self._events_checked_count
+            self._events_cleaned_count, self._events_checked_count = 0, 0 # Reset counter
 
             period_days = self._status_event_interval_sec // 86400
             announcement_message = (
-                f"This bot has replied to {count} events with tracking tokens in the last {period_days} days.\n\n"
+                f"This bot has checked {count_checked} events and found {count_cleaned} events with tracking tokens in the last {period_days} days.\n\n"
                 f"Find the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover"
             )
 
