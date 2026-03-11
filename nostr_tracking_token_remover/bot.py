@@ -7,6 +7,7 @@ from .nostr import Bot
 from .link_sanitizer import sanitize_urls_in_any_text
 
 from electrum_aionostr.event import Event as NostrEvent
+from electrum_aionostr.key import PublicKey
 
 
 class TrackingTokenRemover(Bot):
@@ -206,16 +207,20 @@ class TrackingTokenRemover(Bot):
                 f"Find the code on GitHub: https://github.com/f321x/nostr-tracking-token-remover"
             )
 
+            tags = []
             if self._announcement_tag:
-                announcement_message += f"\n@{self._announcement_tag}"
+                announcement_message += f"\nnostr:{self._announcement_tag}"
+                tagged_pubkey = PublicKey.from_npub(self._announcement_tag).hex()
+                tags.append(["p", tagged_pubkey])
 
             announcement_event = NostrEvent(
                 kind=1,
                 content=announcement_message,
-                tags=[],
+                tags=tags,
                 pubkey=self.pubkey,
-            )
-            announcement_event = announcement_event.sign(self._private_key.hex())
+            ).add_expiration_tag(
+                expiration_ts=int(time.time()) + 63072000,  # 2 years
+            ).sign(self._private_key.hex())
 
             await self.broadcast_nostr_event(announcement_event)
 
