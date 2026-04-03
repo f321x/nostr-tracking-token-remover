@@ -33,9 +33,9 @@ class TestUnalixLite(unittest.TestCase):
         assert clear_url(unmodified_url) == "http://0.0.0.0/"
         assert clear_url(unmodified_url, skipLocal=True) == unmodified_url
 
-        unmodified_url = "https://natura.com.br/p/2458?consultoria=promotop"
+        unmodified_url = "https://www.amazon.com/dp/B08CH7RHDP?tag=affiliate-20"
 
-        assert clear_url(unmodified_url) == "https://natura.com.br/p/2458"
+        assert clear_url(unmodified_url) == "https://www.amazon.com/dp/B08CH7RHDP"
         assert clear_url(unmodified_url, ignoreReferralMarketing=True) == unmodified_url
 
         unmodified_url = "https://myaccount.google.com/?utm_source=google"
