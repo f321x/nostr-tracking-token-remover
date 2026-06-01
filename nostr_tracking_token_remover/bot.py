@@ -8,6 +8,7 @@ from .link_sanitizer import sanitize_urls_in_any_text
 
 from electrum_aionostr.event import Event as NostrEvent
 from electrum_aionostr.key import PublicKey
+from electrum_aionostr import bech32
 
 
 class TrackingTokenRemover(Bot):
@@ -26,6 +27,11 @@ class TrackingTokenRemover(Bot):
         self._profile_info = nostr_profile
         self._status_event_interval_sec = status_event_interval_sec
         self._announcement_tag = announcement_tag
+        # Validate the announcement npub at startup so a malformed ANNOUNCEMENT_TAG fails fast
+        # here instead of crashing the status task (and SIGTERMing the process) at the first
+        # announcement interval. Also precomputes the hex pubkey so we don't re-decode it every
+        # interval.
+        self._announcement_pubkey_hex = self._announcement_pubkey_from_tag(announcement_tag)
         self._response_queue = asyncio.Queue(maxsize=10_000)  # type: asyncio.Queue[NostrEvent]
         self._events_checked_count = 0
         self._events_cleaned_count = 0
@@ -41,6 +47,27 @@ class TrackingTokenRemover(Bot):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await Bot.__aexit__(self, exc_type, exc_val, exc_tb)
+
+    @staticmethod
+    def _announcement_pubkey_from_tag(announcement_tag: str) -> Optional[str]:
+        """Validate ANNOUNCEMENT_TAG and return its hex pubkey, or None if unset.
+
+        Raises ValueError on a malformed or non-npub value. PublicKey.from_npub does not check
+        the bech32 prefix, so without this guard a wrong value (e.g. a note1.../nprofile1...)
+        would either be silently mis-tagged as a "p" tag or raise an uncaught exception deep
+        inside the periodic status task, which would bring down the whole process.
+        """
+        if not announcement_tag:
+            return None
+        hrp, _data, _spec = bech32.bech32_decode(announcement_tag)
+        if hrp != "npub":
+            raise ValueError(
+                f"ANNOUNCEMENT_TAG must be an npub, got prefix {hrp!r}: {announcement_tag!r}"
+            )
+        try:
+            return PublicKey.from_npub(announcement_tag).hex()
+        except Exception as e:
+            raise ValueError(f"invalid ANNOUNCEMENT_TAG npub: {announcement_tag!r}") from e
 
     async def _sanitize_kind1_events(self):
         """
@@ -177,8 +204,8 @@ class TrackingTokenRemover(Bot):
         oldest response.
         """
         if self._response_queue.full():
-            event = self._response_queue.get_nowait()
-            self.logger.warn(f"dropping response due to full queue: {event.id}")
+            dropped = self._response_queue.get_nowait()
+            self.logger.warning(f"dropping oldest response due to full queue: {dropped.id}")
         await self._response_queue.put(event)
 
     async def _broadcast_responses(self):
@@ -210,8 +237,7 @@ class TrackingTokenRemover(Bot):
             tags = []
             if self._announcement_tag:
                 announcement_message += f"\nnostr:{self._announcement_tag}"
-                tagged_pubkey = PublicKey.from_npub(self._announcement_tag).hex()
-                tags.append(["p", tagged_pubkey])
+                tags.append(["p", self._announcement_pubkey_hex])
 
             announcement_event = NostrEvent(
                 kind=1,
