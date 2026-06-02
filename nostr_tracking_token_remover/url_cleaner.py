@@ -91,8 +91,10 @@ _PROVIDERS: tuple[_Provider, ...] = (
     _Provider(
         name="twitter/x",
         host=_host(r"x\.com", r"twitter\.com"),
-        # On x/twitter `t` is a share-tracking token, not a timestamp.
-        params=frozenset({"s", "t", "src", "ref_src", "refsrc", "ref_url", "cn"}),
+        # `t` is a per-share tracking token (not a timestamp). `s` (e.g. s=20)
+        # is the share source/surface indicator, not a per-user tracker, so it
+        # is intentionally absent here -> preserved.
+        params=frozenset({"t", "src", "ref_src", "refsrc", "ref_url", "cn"}),
     ),
     _Provider(
         name="facebook",

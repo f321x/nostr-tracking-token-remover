@@ -66,17 +66,30 @@ class TestCleanUrlYouTube(unittest.TestCase):
 
 
 class TestCleanUrlTwitterX(unittest.TestCase):
-    def test_x_share_tokens_stripped(self):
-        # on x.com `t` is a SHARE-TRACKING token (not a timestamp) -> stripped
-        cleaned, removed = clean_url("https://x.com/user/status/123?s=20&t=abcdef123")
+    def test_t_share_token_stripped(self):
+        # on x/twitter `t` is a per-share tracking token (not a timestamp) -> stripped
+        cleaned, removed = clean_url("https://x.com/user/status/123?t=abcdef123")
         self.assertEqual(cleaned, "https://x.com/user/status/123")
-        self.assertIn("s=20", removed)
         self.assertIn("t=abcdef123", removed)
 
+    def test_s_source_param_is_preserved(self):
+        # `s` (e.g. s=20) is the share source/surface indicator, not a per-user
+        # tracker -> preserved. Alone there is nothing to remove, bot stays silent.
+        result = clean_url("https://x.com/user/status/123?s=20")
+        self.assertIsNone(result)
+
+    def test_strips_t_but_keeps_s_source_param(self):
+        # both present: remove the `t` tracker, keep the harmless s=20
+        cleaned, removed = clean_url("https://x.com/user/status/123?s=20&t=abcdef123")
+        self.assertEqual(cleaned, "https://x.com/user/status/123?s=20")
+        self.assertIn("t=abcdef123", removed)
+        self.assertNotIn("s=20", removed)
+
     def test_twitter_com_also_covered(self):
-        cleaned, removed = clean_url("https://twitter.com/user/status/123?s=20")
+        # twitter.com host is allowlisted too; the `t` tracker is removed
+        cleaned, removed = clean_url("https://twitter.com/user/status/123?t=abcdef123")
         self.assertEqual(cleaned, "https://twitter.com/user/status/123")
-        self.assertIn("s=20", removed)
+        self.assertIn("t=abcdef123", removed)
 
 
 class TestCleanUrlReddit(unittest.TestCase):
